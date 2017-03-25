@@ -1,2 +1,3 @@
 */build/
 *.so
+lsd_slam_core/obj/
