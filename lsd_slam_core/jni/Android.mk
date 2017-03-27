@@ -55,9 +55,12 @@ LOCAL_C_INCLUDES += \
     $(ROOT)/Boost-for-Android/build/include/boost-1_53 \
     $(ROOT)/pangolin_android/Pangolin/include \
     $(ROOT)/pangolin_android/build/src/include \
+    $(ROOT)/g2o \
     $(ROOT)/g2o/g2o \
+    $(ROOT)/g2o/build \
+    $(ROOT)/g2o/EXTERNAL/csparse \
 
-LOCAL_LDLIBS += -landroid -lGLESv2
+LOCAL_LDLIBS += -landroid -lGLESv2 -lz -llog
 LOCAL_CFLAGS += -g
 
 #LOCAL_CFLAGS += -fopenmp
@@ -69,19 +72,13 @@ LOCAL_EXPORT_CFLAGS := $(LOCAL_CFLAGS) #export c flgs
 LOCAL_EXPORT_CPPFLAGS := $(LOCAL_CPPFLAGS) #export cpp flgs
 LOCAL_EXPORT_CXXFLAGS := $(LOCAL_CXXFLAGS) #export cpp flgs
 
-LOCAL_LDFLAGS += \
-    $(ROOT)/Boost-for-Android/build/lib \
-    $(ROOT)/OpenCV-android-sdk/sdk/native/libs \
-    $(ROOT)/pangolin_android/build/libs/armeabi-v7a \
-    $(ROOT)/g2o/lib \
-
 LOCAL_STATIC_LIBRARIES += boost_android_thread boost_android_filesystem boost_android_system
 LOCAL_STATIC_LIBRARIES += opencv_android_calib3d opencv_android_highgui opencv_android_imgcodecs \
     opencv_android_imgproc opencv_android_core opencv_android_features2d opencv_android_flann
 LOCAL_STATIC_LIBRARIES += glm
-LOCAL_SHARED_LIBRARIES += pangolin_android
+LOCAL_SHARED_LIBRARIES += pangolin_android libz
 LOCAL_SHARED_LIBRARIES += g2o_android_core g2o_android_stuff g2o_android_solver_csparse \
-    g2o_android_csparse_extension g2o_android_types_sim3 g2o_android_types_sba
+    g2o_android_csparse_extension g2o_android_types_sim3 g2o_android_types_sba g2o_android_ext_csparse 
 
 
 include $(BUILD_SHARED_LIBRARY)
@@ -173,6 +170,11 @@ include $(PREBUILT_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := g2o_android_types_sba
 LOCAL_SRC_FILES := $(ROOT)/g2o/lib/libg2o_types_sba.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := g2o_android_ext_csparse
+LOCAL_SRC_FILES := $(ROOT)/g2o/lib/libg2o_ext_csparse.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 $(call import-add-path,$(LOCAL_PATH)/../ndk-modules)

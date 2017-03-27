@@ -8,7 +8,11 @@
 #ifndef KEYFRAME_H_
 #define KEYFRAME_H_
 
+#ifdef ANDROID
+#include <pangolin/gl/glplatform.h> // aarontang added
+#else
 #include <GL/glew.h>
+#endif
 #include "util/settings.h"
 #include "sophus/sim3.hpp"
 #include <iostream>
@@ -185,6 +189,8 @@ class Keyframe
 
         void drawCamera()
         {
+            // TODO: aaron rewrite with new grammer
+#if 0
             glPushMatrix();
             Sophus::Matrix4f m = camToWorld.matrix();
             glMultMatrixf((GLfloat*) m.data());
@@ -209,6 +215,7 @@ class Keyframe
             glEnd();
             glPopMatrix();
             glColor3f(1, 1, 1);
+#endif
         }
 
         int id;

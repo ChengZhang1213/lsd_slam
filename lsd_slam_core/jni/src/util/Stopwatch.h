@@ -181,7 +181,14 @@ class Stopwatch
 
             for(std::map<std::string, float>::const_iterator it = timings.begin(); it != timings.end(); it++)
             {
+#ifdef ANDROID
+		// aarontang add <<
+		valuePointer = (float *)memcpy(valuePointer, it->first.c_str(), it->first.length() + 1);
+		valuePointer += it->first.length() + 1;
+		// aarontang end >>
+#else
                 valuePointer = (float *)mempcpy(valuePointer, it->first.c_str(), it->first.length() + 1);
+#endif
                 *valuePointer++ = it->second;
             }
 

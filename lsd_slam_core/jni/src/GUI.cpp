@@ -6,6 +6,7 @@
  */
 
 #include "GUI.h"
+#include <pangolin/display/device/display_glut.h>
 
 GUI::GUI()
  : depthImg(0),
@@ -138,7 +139,8 @@ void GUI::drawKeyframes()
     boost::mutex::scoped_lock lock(keyframes.getMutex());
 
     glEnable(GL_MULTISAMPLE);
-    glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
+    // TODO: aaron rewrite
+//    glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
 
     for(std::map<int, Keyframe *>::iterator i = keyframes.getReference().begin(); i != keyframes.getReference().end(); ++i)
     {
@@ -161,6 +163,8 @@ void GUI::drawKeyframes()
 
 void GUI::drawFrustum()
 {
+    // TODO: aaron rewrite
+#if 0
     glPushMatrix();
     Sophus::Matrix4f m = pose.getValue().matrix();
     glMultMatrixf((GLfloat*) m.data());
@@ -185,10 +189,13 @@ void GUI::drawFrustum()
     glEnd();
     glPopMatrix();
     glColor3f(1, 1, 1);
+#endif
 }
 
 void GUI::drawGrid()
 {
+    // TODO: aaron rewrite
+#if 0
     //set pose
     glPushMatrix();
 
@@ -270,6 +277,7 @@ void GUI::drawGrid()
     glEnd();
 
     glPopMatrix();
+#endif
 }
 
 void GUI::postCall()
