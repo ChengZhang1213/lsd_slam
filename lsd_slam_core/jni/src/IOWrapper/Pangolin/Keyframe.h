@@ -172,7 +172,8 @@ class Keyframe
 
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
             glVertexPointer(3, GL_FLOAT, sizeof(MyVertex), 0);
-            glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(MyVertex), (const void*) (3*sizeof(float)));
+            // TODO: aaron rewrite
+//            glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(MyVertex), (const void*) (3*sizeof(float)));
 
             glEnableClientState(GL_VERTEX_ARRAY);
             glEnableClientState(GL_COLOR_ARRAY);
