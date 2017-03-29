@@ -14,6 +14,7 @@
 #include <GL/glew.h>
 #endif
 #include "util/settings.h"
+#include "util/opengl_helper.h"
 #include "sophus/sim3.hpp"
 #include <iostream>
 
@@ -172,8 +173,7 @@ class Keyframe
 
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
             glVertexPointer(3, GL_FLOAT, sizeof(MyVertex), 0);
-            // TODO: aaron rewrite
-//            glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(MyVertex), (const void*) (3*sizeof(float)));
+            glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(MyVertex), (const void*) (3*sizeof(float)));
 
             glEnableClientState(GL_VERTEX_ARRAY);
             glEnableClientState(GL_COLOR_ARRAY);
@@ -190,11 +190,31 @@ class Keyframe
 
         void drawCamera()
         {
-            // TODO: aaron rewrite with new grammer
-#if 0
             glPushMatrix();
             Sophus::Matrix4f m = camToWorld.matrix();
             glMultMatrixf((GLfloat*) m.data());
+#ifdef ANDROID
+            GLfloat g_vertex_buffer_data[] = {
+                0.0f, 0.0f, 0.0f,
+                (GLfloat)(0.05 * (0 - cx) / fx), (GLfloat)(0.05 * (0 - cy) / fy), 0.05f,
+                0.0f, 0.0f, 0.0f,
+                (GLfloat)(0.05 * (0 - cx) / fx), (GLfloat)(0.05 * (height - 1 - cy) / fy), 0.05f,
+                0.0f, 0.0f, 0.0f,
+                (GLfloat)(0.05 * (width - 1 - cx) / fx), (GLfloat)(0.05 * (height - 1 - cy) / fy), 0.05f,
+                0.0f, 0.0f, 0.0f,
+                (GLfloat)(0.05 * (width - 1 - cx) / fx), (GLfloat)(0.05 * (0 - cy) / fy), 0.05f,
+                (GLfloat)(0.05 * (width - 1 - cx) / fx, 0.05 * (0 - cy) / fy), 0.05f,
+                (GLfloat)(0.05 * (width - 1 - cx) / fx, 0.05 * (height - 1 - cy) / fy), 0.05f,
+                (GLfloat)(0.05 * (width - 1 - cx) / fx, 0.05 * (height - 1 - cy) / fy), 0.05f,
+                (GLfloat)(0.05 * (0 - cx) / fx, 0.05 * (height - 1 - cy) / fy), 0.05f,
+                (GLfloat)(0.05 * (0 - cx) / fx, 0.05 * (height - 1 - cy) / fy), 0.05f,
+                (GLfloat)(0.05 * (0 - cx) / fx, 0.05 * (0 - cy) / fy), 0.05f,
+                (GLfloat)(0.05 * (0 - cx) / fx, 0.05 * (0 - cy) / fy), 0.05f,
+                (GLfloat)(0.05 * (width - 1 - cx) / fx, 0.05 * (0 - cy) / fy), 0.05f,
+            };
+            int points = (sizeof(g_vertex_buffer_data)/sizeof(g_vertex_buffer_data[0])) / 3;
+            drawLines(g_vertex_buffer_data, points);
+#else
             glColor3f(1, 0, 0);
             glBegin(GL_LINES);
                 glVertex3f(0, 0, 0);
@@ -214,7 +234,9 @@ class Keyframe
                 glVertex3f(0.05 * (0 - cx) / fx, 0.05 * (0 - cy) / fy, 0.05);
                 glVertex3f(0.05 * (width - 1 - cx) / fx, 0.05 * (0 - cy) / fy, 0.05);
             glEnd();
+#endif
             glPopMatrix();
+#ifndef ANDROID
             glColor3f(1, 1, 1);
 #endif
         }

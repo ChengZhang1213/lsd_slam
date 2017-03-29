@@ -7,6 +7,7 @@
 
 #include "GUI.h"
 #include <pangolin/display/device/display_glut.h>
+#include "util/opengl_helper.h"
 
 GUI::GUI()
  : depthImg(0),
@@ -143,7 +144,7 @@ void GUI::drawKeyframes()
 
     glEnable(GL_MULTISAMPLE);
     // TODO: aaron rewrite
-//    glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
+    //glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
 
     for(std::map<int, Keyframe *>::iterator i = keyframes.getReference().begin(); i != keyframes.getReference().end(); ++i)
     {
@@ -166,11 +167,31 @@ void GUI::drawKeyframes()
 
 void GUI::drawFrustum()
 {
-    // TODO: aaron rewrite
-#if 0
     glPushMatrix();
     Sophus::Matrix4f m = pose.getValue().matrix();
     glMultMatrixf((GLfloat*) m.data());
+#ifdef ANDROID
+    GLfloat g_vertex_buffer_data[] = {
+        0.0f, 0.0f, 0.0f,
+        (GLfloat)(0.05f * (0 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx(), 0.05 * (0 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+        0.0f, 0.0f, 0.0f,
+        (GLfloat)(0.05f * (0 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx(), 0.05 * (Resolution::getInstance().height() - 1 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+        0.0f, 0.0f, 0.0f,
+        (GLfloat)(0.05f * (Resolution::getInstance().width() - 1 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx()), (GLfloat)(0.05 * (Resolution::getInstance().height() - 1 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+        0.0f, 0.0f, 0.0f,
+        (GLfloat)(0.05f * (Resolution::getInstance().width() - 1 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx()), (GLfloat)(0.05 * (0 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+        (GLfloat)(0.05f * (Resolution::getInstance().width() - 1 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx()), (GLfloat)(0.05 * (0 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+        (GLfloat)(0.05f * (Resolution::getInstance().width() - 1 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx()), (GLfloat)(0.05 * (Resolution::getInstance().height() - 1 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+        (GLfloat)(0.05f * (Resolution::getInstance().width() - 1 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx()), (GLfloat)(0.05 * (Resolution::getInstance().height() - 1 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+        (GLfloat)(0.05f * (0 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx()), (GLfloat)(0.05 * (Resolution::getInstance().height() - 1 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+        (GLfloat)(0.05f * (0 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx()), (GLfloat)(0.05 * (Resolution::getInstance().height() - 1 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+        (GLfloat)(0.05f * (0 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx()), (GLfloat)(0.05 * (0 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+        (GLfloat)(0.05f * (0 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx()), (GLfloat)(0.05 * (0 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+        (GLfloat)(0.05f * (Resolution::getInstance().width() - 1 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx()), (GLfloat)(0.05 * (0 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy()), 0.05f,
+    };
+    int points = (sizeof(g_vertex_buffer_data)/sizeof(g_vertex_buffer_data[0])) / 3;
+    drawLines(g_vertex_buffer_data, points);
+#else
     glColor3f(1, 0, 0);
     glBegin(GL_LINES);
         glVertex3f(0, 0, 0);
@@ -190,27 +211,211 @@ void GUI::drawFrustum()
         glVertex3f(0.05 * (0 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx(), 0.05 * (0 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy(), 0.05);
         glVertex3f(0.05 * (Resolution::getInstance().width() - 1 - Intrinsics::getInstance().cx()) / Intrinsics::getInstance().fx(), 0.05 * (0 - Intrinsics::getInstance().cy()) / Intrinsics::getInstance().fy(), 0.05);
     glEnd();
+#endif
     glPopMatrix();
+#ifndef ANDROID
     glColor3f(1, 1, 1);
 #endif
 }
 
 void GUI::drawGrid()
 {
-    // TODO: aaron rewrite
-#if 0
     //set pose
     glPushMatrix();
 
     Eigen::Matrix4f m;
+#ifdef ANDROID
+    m <<  0, -1,  0, 0,
+          0,  0, -1, 0,
+          1,  0,  0, 0,
+          0,  0,  0, 1;
+    glMultMatrixf((float*)m.data());    // column-major order multiply
+#else
     m <<  0,  0, 1, 0,
          -1,  0, 0, 0,
           0, -1, 0, 0,
           0,  0, 0, 1;
-    glMultTransposeMatrixf((float*)m.data());
+    glMultTransposeMatrixf((float*)m.data());   // row-major order multiply
+#endif
 
     glLineWidth(1);
+    
+#ifdef ANDROID
+    // Draw a larger grid around the outside..
+    double dGridInterval = 0.1;
 
+    double dMin = -100.0 * dGridInterval;
+    double dMax = 100.0 * dGridInterval;
+
+    double height = -4;
+
+    MyVertex vertices[2 * 42];
+    int i = 0;
+    for(int x = -10; x <= 10; x += 1)
+    {
+        unsigned char r, g, b, a = 0;
+        if(x == 0) {
+            r = g = b = 255;
+            a = 100;
+        } else {
+            r = g = b = (unsigned char)(255 * 0.3);
+            a = 100;
+        }
+        vertices[i].point[0] = (float)(x * 10 * dGridInterval);
+        vertices[i].point[1] = (float)dMin;
+        vertices[i].point[2] = (float)height;
+        vertices[i].color[0] = r;
+        vertices[i].color[1] = g;
+        vertices[i].color[2] = b;
+        vertices[i].color[3] = a;
+        vertices[i + 1].point[0] = (float)(x * 10 * dGridInterval);
+        vertices[i + 1].point[1] = (float)dMax;
+        vertices[i + 1].point[2] = (float)height;
+        vertices[i + 1].color[0] = r;
+        vertices[i + 1].color[1] = g;
+        vertices[i + 1].color[2] = b;
+        vertices[i + 1].color[3] = a;
+        i += 2;
+    }
+
+    for(int y = -10; y <= 10; y += 1)
+    {
+        unsigned char r, g, b, a = 0;
+        if(y == 0) {
+            r = g = b = 255;
+            a = 100;
+        } else {
+            r = g = b = (unsigned char)(255 * 0.3);
+            a = 100;
+        }
+        vertices[i].point[0] = (float)dMin;
+        vertices[i].point[1] = (float)(y * 10 * dGridInterval);
+        vertices[i].point[2] = (float)height;
+        vertices[i].color[0] = r;
+        vertices[i].color[1] = g;
+        vertices[i].color[2] = b;
+        vertices[i].color[3] = a;
+        vertices[i + 1].point[0] = (float)dMax;
+        vertices[i + 1].point[1] = (float)(y * 10 * dGridInterval);
+        vertices[i + 1].point[2] = (float)height;
+        vertices[i + 1].color[0] = r;
+        vertices[i + 1].color[1] = g;
+        vertices[i + 1].color[2] = b;
+        vertices[i + 1].color[3] = a;
+        i += 2;
+    }
+    printf("%s: drawLines i=%d\n", __FUNCTION__, i);
+    drawLines(vertices, i);
+
+    dMin = -10.0 * dGridInterval;
+    dMax = 10.0 * dGridInterval;
+
+    MyVertex vertices2[2 * 42 + 6];
+    int j = 0;
+    for(int x = -10; x <= 10; x++)
+    {
+        unsigned char r, g, b, a = 0;
+        if(x == 0) {
+            r = g = b = 255;
+            a = 100;
+        } else {
+            r = g = b = (unsigned char)(255 * 0.5);
+            a = 100;
+        }
+        vertices2[j].point[0] = (float)(x * dGridInterval);
+        vertices2[j].point[1] = (float)dMin;
+        vertices2[j].point[2] = (float)height;
+        vertices2[j].color[0] = r;
+        vertices2[j].color[1] = g;
+        vertices2[j].color[2] = b;
+        vertices2[j].color[3] = a;
+        vertices2[j + 1].point[0] = (float)(x * dGridInterval);
+        vertices2[j + 1].point[1] = (float)dMax;
+        vertices2[j + 1].point[2] = (float)height;
+        vertices2[j + 1].color[0] = r;
+        vertices2[j + 1].color[1] = g;
+        vertices2[j + 1].color[2] = b;
+        vertices2[j + 1].color[3] = a;
+        j += 2;
+    }
+
+    for(int y = -10; y <= 10; y++)
+    {
+        unsigned char r, g, b, a = 0;
+        if(y == 0) {
+            r = g = b = 255;
+            a = 100;
+        } else {
+            r = g = b = (unsigned char)(255 * 0.5);
+            a = 100;
+        }
+        vertices2[j].point[0] = (float)dMin;
+        vertices2[j].point[1] = (float)(y * dGridInterval);
+        vertices2[j].point[2] = (float)height;
+        vertices2[j].color[0] = r;
+        vertices2[j].color[1] = g;
+        vertices2[j].color[2] = b;
+        vertices2[j].color[3] = a;
+        vertices2[j + 1].point[0] = (float)dMax;
+        vertices2[j + 1].point[1] = (float)(y * dGridInterval);
+        vertices2[j + 1].point[2] = (float)height;
+        vertices2[j + 1].color[0] = r;
+        vertices2[j + 1].color[1] = g;
+        vertices2[j + 1].color[2] = b;
+        vertices2[j + 1].color[3] = a;
+        j += 2;
+    }
+
+    vertices2[j].point[0] = 0;
+    vertices2[j].point[1] = 0;
+    vertices2[j].point[2] = height;
+    vertices2[j].color[0] = 255;
+    vertices2[j].color[1] = 0;
+    vertices2[j].color[2] = 0;
+    vertices2[j].color[3] = 100;
+    vertices2[j + 1].point[0] = 1;
+    vertices2[j + 1].point[1] = 0;
+    vertices2[j + 1].point[2] = height;
+    vertices2[j + 1].color[0] = 255;
+    vertices2[j + 1].color[1] = 0;
+    vertices2[j + 1].color[2] = 0;
+    vertices2[j + 1].color[3] = 100;
+    j += 2;
+    
+    vertices2[j].point[0] = 0;
+    vertices2[j].point[1] = 0;
+    vertices2[j].point[2] = height;
+    vertices2[j].color[0] = 0;
+    vertices2[j].color[1] = 255;
+    vertices2[j].color[2] = 0;
+    vertices2[j].color[3] = 100;
+    vertices2[j + 1].point[0] = 0;
+    vertices2[j + 1].point[1] = 1;
+    vertices2[j + 1].point[2] = height;
+    vertices2[j + 1].color[0] = 0;
+    vertices2[j + 1].color[1] = 255;
+    vertices2[j + 1].color[2] = 0;
+    vertices2[j + 1].color[3] = 100;
+    j += 2;
+    
+    vertices2[j].point[0] = 0;
+    vertices2[j].point[1] = 0;
+    vertices2[j].point[2] = height;
+    vertices2[j].color[0] = 255;
+    vertices2[j].color[1] = 255;
+    vertices2[j].color[2] = 255;
+    vertices2[j].color[3] = 100;
+    vertices2[j + 1].point[0] = 0;
+    vertices2[j + 1].point[1] = 0;
+    vertices2[j + 1].point[2] = height + 1;
+    vertices2[j + 1].color[0] = 255;
+    vertices2[j + 1].color[1] = 255;
+    vertices2[j + 1].color[2] = 255;
+    vertices2[j + 1].color[3] = 100;
+    j += 2;
+    printf("%s: drawLines j=%d\n", __FUNCTION__, j);
+    drawLines(vertices2, j);
+#else
     glBegin(GL_LINES);
 
     // Draw a larger grid around the outside..
@@ -278,9 +483,9 @@ void GUI::drawGrid()
     glVertex3d(0, 0, height);
     glVertex3d(0, 0, height + 1);
     glEnd();
+#endif
 
     glPopMatrix();
-#endif
 }
 
 void GUI::postCall()

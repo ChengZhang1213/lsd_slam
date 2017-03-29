@@ -34,6 +34,7 @@ LOCAL_SRC_FILES += \
     $(LSD_PATH)/GlobalMapping/KeyFrameGraph.cpp \
     $(LSD_PATH)/GlobalMapping/g2oTypeSim3Sophus.cpp \
     $(LSD_PATH)/GlobalMapping/TrackableKeyFrameSearch.cpp \
+    $(LSD_PATH)/util/opengl_helper.cpp \
 
 LOCAL_SRC_FILES += \
     $(LSD_PATH)/IOWrapper/OpenCV/ImageDisplay_OpenCV.cpp \
@@ -60,7 +61,7 @@ LOCAL_C_INCLUDES += \
     $(ROOT)/g2o/build \
     $(ROOT)/g2o/EXTERNAL/csparse \
 
-LOCAL_LDLIBS += -landroid -lGLESv2 -lz -llog
+LOCAL_LDLIBS += -landroid -lGLESv1_CM -lGLESv2 -lz -llog
 LOCAL_CFLAGS += -g
 
 #LOCAL_CFLAGS += -fopenmp
