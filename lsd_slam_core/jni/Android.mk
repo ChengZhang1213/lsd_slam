@@ -5,7 +5,8 @@ ROOT := /data/projects/andorid_ndk
 
 LOCAL_CFLAGS += -std=c++11 -Wno-deprecated-declarations
 LOCAL_CPPFLAGS += -std=c++11 -O3
-LOCAL_MODULE    := LSD
+LOCAL_MODULE := LSD
+LOCAL_ARM_MODE := arm
 
 LSD_PATH := $(LOCAL_PATH)/src
 
@@ -35,6 +36,7 @@ LOCAL_SRC_FILES += \
     $(LSD_PATH)/GlobalMapping/g2oTypeSim3Sophus.cpp \
     $(LSD_PATH)/GlobalMapping/TrackableKeyFrameSearch.cpp \
     $(LSD_PATH)/util/opengl_helper.cpp \
+    $(LSD_PATH)/lsd_jni.cpp \
 
 LOCAL_SRC_FILES += \
     $(LSD_PATH)/IOWrapper/OpenCV/ImageDisplay_OpenCV.cpp \
@@ -80,7 +82,8 @@ LOCAL_STATIC_LIBRARIES += opencv_android_calib3d opencv_android_highgui opencv_a
 LOCAL_STATIC_LIBRARIES += glm
 LOCAL_SHARED_LIBRARIES += pangolin_android libz
 LOCAL_SHARED_LIBRARIES += g2o_android_core g2o_android_stuff g2o_android_solver_csparse \
-    g2o_android_csparse_extension g2o_android_types_sim3 g2o_android_types_sba g2o_android_ext_csparse 
+    g2o_android_csparse_extension g2o_android_types_sim3 g2o_android_types_sba g2o_android_ext_csparse \
+    g2o_android_types_slam3d
 
 
 include $(BUILD_SHARED_LIBRARY)
@@ -217,6 +220,11 @@ include $(PREBUILT_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := g2o_android_ext_csparse
 LOCAL_SRC_FILES := $(ROOT)/g2o/lib/libg2o_ext_csparse.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := g2o_android_types_slam3d
+LOCAL_SRC_FILES := $(ROOT)/g2o/lib/libg2o_types_slam3d.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 $(call import-add-path,$(LOCAL_PATH)/../ndk-modules)
