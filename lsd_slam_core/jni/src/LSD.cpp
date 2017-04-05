@@ -39,11 +39,12 @@
 #include "opencv2/opencv.hpp"
 
 #include "GUI.h"
+#include "util/logger.h"
 
 std::vector<std::string> files;
 int w, h, w_inp, h_inp;
 ThreadMutexObject<bool> lsdDone(false);
-GUI gui;
+GUI* p_gui = NULL;
 RawLogReader * logReader = 0;
 int numFrames = 0;
 
@@ -180,16 +181,21 @@ void run(SlamSystem * system, Undistorter* undistorter, Output3DWrapper* outputW
 
         assert(image.type() == CV_8U);
 
+        LOGD("runningIDX=%d\n", runningIDX);
         if(runningIDX == 0)
         {
+            LOGD("system->randomInit\n");
             system->randomInit(image.data, fakeTimeStamp, runningIDX);
+            LOGD("system->randomInit done.");
         }
         else
         {
+            LOGD("system->trackFrame");
             system->trackFrame(image.data, runningIDX, hz == 0, fakeTimeStamp);
+            LOGD("system->trackFrame done.");
         }
 
-        gui.pose.assignValue(system->getCurrentPoseEstimateScale());
+        p_gui->pose.assignValue(system->getCurrentPoseEstimateScale());
 
         runningIDX++;
         fakeTimeStamp+=0.03;
@@ -210,6 +216,8 @@ void run(SlamSystem * system, Undistorter* undistorter, Output3DWrapper* outputW
     lsdDone.assignValue(true);
 }
 
+#define CALIB_FILE "/sdcard/LSD/cameraCalibration.cfg"
+#define IMAGE_DIR "/sdcard/LSD/images"
 int main( int argc, char** argv )
 {
 	// get camera calibration in form of an undistorter object.
@@ -217,7 +225,8 @@ int main( int argc, char** argv )
 	std::string calibFile;
 	Undistorter* undistorter = 0;
 
-	if(Parse::arg(argc, argv, "-c", calibFile) > 0)
+    calibFile = CALIB_FILE;
+//	if(Parse::arg(argc, argv, "-c", calibFile) > 0)
 	{
 		 undistorter = Undistorter::getUndistorterForFile(calibFile.c_str());
 	}
@@ -244,6 +253,8 @@ int main( int argc, char** argv )
 	Resolution::getInstance(w, h);
 	Intrinsics::getInstance(fx, fy, cx, cy);
 
+    GUI gui;
+    p_gui = &gui;
 	gui.initImages();
 
 	Output3DWrapper* outputWrapper = new PangolinOutput3DWrapper(w, h, gui);
@@ -254,12 +265,12 @@ int main( int argc, char** argv )
 
 
 	// open image files: first try to open as file.
-	std::string source;
-	if(!(Parse::arg(argc, argv, "-f", source) > 0))
-	{
-		printf("need source files! (set using -f FOLDER or KLG)\n");
-		exit(0);
-	}
+	std::string source = IMAGE_DIR;
+//	if(!(Parse::arg(argc, argv, "-f", source) > 0))
+//	{
+//		printf("need source files! (set using -f FOLDER or KLG)\n");
+//		exit(0);
+//	}
 
 	Bytef * decompressionBuffer = new Bytef[Resolution::getInstance().numPixels() * 2];
     IplImage * deCompImage = 0;
@@ -300,14 +311,19 @@ int main( int argc, char** argv )
 	    }
 
 	    gui.preCall();
+        LOGD("preCall done. drawKeyframes\n");
 
 	    gui.drawKeyframes();
+        LOGD("drawKeyframes done. drawFrustum\n");
 
 	    gui.drawFrustum();
+        LOGD("drawFrustum done. drawImages\n");
 
 	    gui.drawImages();
+        LOGD("drawImages done. postCall\n");
 
 	    gui.postCall();
+	    LOGD("postCall done.\n");
 	}
 
 	lsdDone.assignValue(true);
