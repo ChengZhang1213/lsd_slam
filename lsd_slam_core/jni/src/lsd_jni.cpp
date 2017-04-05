@@ -121,6 +121,12 @@ int getFile (std::string source, std::vector<std::string> &files)
 	}
 }
 
+void printMatrix(const Sophus::Sim3f::Transformation& trans) {
+    std::ostringstream out;
+    out << trans;
+    LOGD("matrix:\n%s", out.str().c_str());
+}
+
 void run_once(SlamSystem * system, Undistorter* undistorter, Output3DWrapper* outputWrapper, Sophus::Matrix3f K)
 {    
     
@@ -172,29 +178,21 @@ void run(SlamSystem * system, Undistorter* undistorter, Output3DWrapper* outputW
         undistorter->undistort(imageDist, image);
 
         assert(image.type() == CV_8U);
-        LOGD("runningIDX=%d\n", runningIDX);
         if(runningIDX == 0)
         {
-            LOGD("system->randomInit image.data=%p, fakeTimeStamp=%f, runningIDX=%d\n", image.data, fakeTimeStamp, runningIDX);
             system->randomInit(image.data, fakeTimeStamp, runningIDX);
-            LOGD("system->randomInit done. runningIDX=%d\n", runningIDX);
         }
         else
         {
-            LOGD("system->trackFrame image.data=%p, hz=%lf, fakeTimeStamp=%f, runningIDX=%d\n", image.data, hz, fakeTimeStamp, runningIDX);
             system->trackFrame(image.data, runningIDX, hz == 0, fakeTimeStamp);
-            LOGD("system->trackFrame done. runningIDX=%d\n", runningIDX);
         }
-        Sophus::Sim3f::Transformation pose = system->getCurrentPoseEstimateScale().matrix();
-        std::ostringstream out;
-        out << pose;
-        LOGD("runningIDX=%d, pose matrix:\n%s", runningIDX, out.str().c_str());
-
+        
+        printMatrix(system->getCurrentPoseEstimateScale().matrix());
         //gui.pose.assignValue(system->getCurrentPoseEstimateScale());
 
         runningIDX++;
         fakeTimeStamp+=0.03;
-
+ 
         if(fullResetRequested)
         {
             LOGD("FULL RESET!\n");
@@ -208,7 +206,7 @@ void run(SlamSystem * system, Undistorter* undistorter, Output3DWrapper* outputW
         }
     }
     
-//    lsdDone.assignValue(true);
+    
 }
 
 
@@ -285,6 +283,7 @@ Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz) {
 JNIEXPORT void JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeDestroy(JNIEnv* env, jobject thiz) {
 	LOGD("nativeDestroy");
+	lsdDone.assignValue(true);
 }
 
 // init OpenGL
