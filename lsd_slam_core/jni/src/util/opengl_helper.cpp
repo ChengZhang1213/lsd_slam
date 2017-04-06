@@ -1,6 +1,14 @@
 #include "opengl_helper.h"
+#include "util/logger.h"
+#include <pangolin/gl/gldraw.h>
 
-void drawLines(GLfloat data[], int points, int r, int g, int b, int a) {
+
+void drawDemoLines() {
+    pangolin::glDrawLine(-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f);
+}
+
+
+void drawLines(GLfloat data[], int points, unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
     MyVertex * tmpBuffer = new MyVertex[points];
     for (int i=0; i<points; ++i) {
         tmpBuffer[i].point[0] = data[i * 3];
@@ -16,6 +24,8 @@ void drawLines(GLfloat data[], int points, int r, int g, int b, int a) {
 }
 
 void drawLines(MyVertex* vertices, int points) {
+    LOGD("drawLines: sizeof(MyVertex)=%u, points=%d\n", sizeof(MyVertex), points);
+    
     GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);

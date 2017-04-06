@@ -121,12 +121,6 @@ int getFile (std::string source, std::vector<std::string> &files)
 	}
 }
 
-void printMatrix(const Sophus::Sim3f::Transformation& trans) {
-    std::ostringstream out;
-    out << trans;
-    LOGD("matrix:\n%s", out.str().c_str());
-}
-
 void run_once(SlamSystem * system, Undistorter* undistorter, Output3DWrapper* outputWrapper, Sophus::Matrix3f K)
 {    
     
@@ -187,7 +181,7 @@ void run(SlamSystem * system, Undistorter* undistorter, Output3DWrapper* outputW
             system->trackFrame(image.data, runningIDX, hz == 0, fakeTimeStamp);
         }
         
-        printMatrix(system->getCurrentPoseEstimateScale().matrix());
+        printTrans(system->getCurrentPoseEstimateScale().matrix());
         //gui.pose.assignValue(system->getCurrentPoseEstimateScale());
 
         runningIDX++;

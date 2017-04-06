@@ -11,6 +11,7 @@ struct MyVertex {
 void drawLines(GLfloat data[], int points);
 void drawLines(GLfloat data[], int points, unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 void drawLines(MyVertex* vertices, int points);
+void drawDemoLines();
 
 
 
