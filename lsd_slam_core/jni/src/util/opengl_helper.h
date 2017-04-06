@@ -1,7 +1,7 @@
 #ifndef OPENGL_HELPER_H
 #define OPENGL_HELPER_H
 
-#include <pangolin/gl/glplatform.h>
+#include <GLES2/gl2.h>
 
 struct MyVertex {
     float point[3];

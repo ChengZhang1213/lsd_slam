@@ -6,7 +6,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := LSD
 
 LOCAL_ARM_MODE := arm
-LOCAL_CFLAGS += -std=c++11 -Wno-deprecated-declarations
+LOCAL_CFLAGS += -std=c++11 -Wno-deprecated-declarations -DNATIVE_DRAW
 LOCAL_CPPFLAGS += -std=c++11 -O3
 
 LSD_PATH := $(LOCAL_PATH)/src

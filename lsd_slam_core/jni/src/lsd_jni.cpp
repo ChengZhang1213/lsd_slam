@@ -8,7 +8,7 @@
 #include "util/Parse.h"
 #include "util/globalFuncs.h"
 #include "util/ThreadMutexObject.h"
-#include "IOWrapper/Pangolin/PangolinOutput3DWrapper.h"
+#include "util/Intrinsics.h"
 #include "SlamSystem.h"
 #include <sstream>
 #include <fstream>
@@ -17,7 +17,6 @@
 #include "util/Undistorter.h"
 #include "util/RawLogReader.h"
 #include "opencv2/opencv.hpp"
-#include "GUI.h"
 #include "util/logger.h"
 #include "sophus/sim3.hpp"
 

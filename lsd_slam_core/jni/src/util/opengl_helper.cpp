@@ -1,10 +1,10 @@
 #include "opengl_helper.h"
 #include "util/logger.h"
-#include <pangolin/gl/gldraw.h>
+#include <GLES/gl.h>
 
 
 void drawDemoLines() {
-    pangolin::glDrawLine(-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f);
+//    pangolin::glDrawLine(-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f);
 }
 
 

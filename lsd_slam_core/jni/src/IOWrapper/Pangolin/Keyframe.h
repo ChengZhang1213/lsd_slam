@@ -8,7 +8,7 @@
 #ifndef KEYFRAME_H_
 #define KEYFRAME_H_
 
-#ifdef ANDROID
+#ifdef NATIVE_DRAW
 #include <pangolin/gl/glplatform.h> // aarontang added
 #include <pangolin/gl/gldraw.h>
 #else
@@ -71,6 +71,7 @@ class Keyframe
 
         void computeVbo()
         {
+#ifdef NATIVE_DRAW
             assert(!(hasVbo && !needsUpdate));
 
             if(hasVbo && needsUpdate)
@@ -161,10 +162,12 @@ class Keyframe
             hasVbo = true;
 
             needsUpdate = false;
+#endif
         }
 
         void drawPoints()
         {
+#ifdef NATIVE_DRAW
             assert(hasVbo);
 
             glPushMatrix();
@@ -187,10 +190,12 @@ class Keyframe
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
             glPopMatrix();
+#endif
         }
 
         void drawCamera()
         {
+#ifdef NATIVE_DRAW
             glPushMatrix();
             Sophus::Matrix4f m = camToWorld.matrix();
             glMultMatrixf((GLfloat*) m.data());
@@ -239,6 +244,7 @@ class Keyframe
 #endif
             glPopMatrix();
             glColor3f(1, 1, 1);
+#endif
         }
 
         int id;

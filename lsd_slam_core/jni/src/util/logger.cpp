@@ -1,4 +1,5 @@
 #include "util/logger.h"
+#include <GLES/gl.h>
 
 
 void printTrans(const Sophus::Sim3f::Transformation& trans) {
@@ -18,4 +19,10 @@ void printMatrix4x4(GLfloat* m) {
     for (int i=0; i<4; ++i) {
         LOGD("%f %f %f %f\n", m[i*4], m[i*4+1], m[i*4+2], m[i*4+3]);
     }
+}
+
+void dumpCurrentMatrix() {
+    GLfloat matrix[16];
+    glGetFloatv (GL_MODELVIEW_MATRIX, matrix);
+    printMatrix4x4(matrix);
 }

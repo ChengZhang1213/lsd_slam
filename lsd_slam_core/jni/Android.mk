@@ -17,7 +17,6 @@ LOCAL_SRC_FILES += \
     $(LSD_PATH)/DataStructures/FramePoseStruct.cpp \
     $(LSD_PATH)/DataStructures/FrameMemory.cpp \
     $(LSD_PATH)/SlamSystem.cpp \
-    $(LSD_PATH)/GUI.cpp \
     $(LSD_PATH)/LiveSLAMWrapper.cpp \
     $(LSD_PATH)/DepthEstimation/DepthMap.cpp \
     $(LSD_PATH)/DepthEstimation/DepthMapPixelHypothesis.cpp \
@@ -36,11 +35,11 @@ LOCAL_SRC_FILES += \
     $(LSD_PATH)/GlobalMapping/g2oTypeSim3Sophus.cpp \
     $(LSD_PATH)/GlobalMapping/TrackableKeyFrameSearch.cpp \
     $(LSD_PATH)/util/opengl_helper.cpp \
+    $(LSD_PATH)/util/logger.cpp \
     $(LSD_PATH)/lsd_jni.cpp \
 
 LOCAL_SRC_FILES += \
     $(LSD_PATH)/IOWrapper/OpenCV/ImageDisplay_OpenCV.cpp \
-    $(LSD_PATH)/IOWrapper/Pangolin/PangolinOutput3DWrapper.cpp \
 
 LOCAL_C_INCLUDES += \
     $(LSD_PATH) \
@@ -56,8 +55,6 @@ LOCAL_C_INCLUDES += \
     $(ROOT)/eigen3 \
     $(ROOT)/OpenCV-android-sdk/sdk/native/jni/include \
     $(ROOT)/Boost-for-Android/build/include/boost-1_53 \
-    $(ROOT)/pangolin_android/Pangolin/include \
-    $(ROOT)/pangolin_android/build/src/include \
     $(ROOT)/g2o \
     $(ROOT)/g2o/g2o \
     $(ROOT)/g2o/build \
@@ -80,7 +77,7 @@ LOCAL_STATIC_LIBRARIES += opencv_android_calib3d opencv_android_highgui opencv_a
     opencv_android_imgproc opencv_android_core opencv_android_features2d opencv_android_flann \
     libwebp libIlmImf libjasper libjpeg libpng libtiff libtbb libtegra_hal
 LOCAL_STATIC_LIBRARIES += glm
-LOCAL_SHARED_LIBRARIES += pangolin_android libz
+LOCAL_SHARED_LIBRARIES += libz
 LOCAL_SHARED_LIBRARIES += g2o_android_core g2o_android_stuff g2o_android_solver_csparse \
     g2o_android_csparse_extension g2o_android_types_sim3 g2o_android_types_sba g2o_android_ext_csparse \
     g2o_android_types_slam3d
@@ -179,12 +176,6 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libtegra_hal
 LOCAL_SRC_FILES := $(ROOT)/OpenCV-android-sdk/sdk/native/3rdparty/libs/armeabi-v7a/libtegra_hal.a
 include $(PREBUILT_STATIC_LIBRARY)
-
-#---------------------------- pangolin ----------------------------
-include $(CLEAR_VARS)
-LOCAL_MODULE := pangolin_android
-LOCAL_SRC_FILES := $(ROOT)/pangolin_android/build/libs/armeabi-v7a/libpangolin.so
-include $(PREBUILT_SHARED_LIBRARY)
 
 #---------------------------- g2o ----------------------------
 include $(CLEAR_VARS)
