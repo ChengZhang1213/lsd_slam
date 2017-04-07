@@ -19,6 +19,7 @@
 #include "opencv2/opencv.hpp"
 #include "util/logger.h"
 #include "sophus/sim3.hpp"
+#include "Android/AndroidOutput3DWrapper.h"
 
 
 // TODO: remove hard code
@@ -33,8 +34,8 @@ RawLogReader * logReader = 0;
 int numFrames = 0;
 Undistorter* undistorter = NULL;
 SlamSystem * slamSystem = NULL;
+Output3DWrapper* outputWrapper = NULL;
 Sophus::Matrix3f K;
-
 
 std::string &ltrim(std::string &s) {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
@@ -134,8 +135,7 @@ void run(SlamSystem * system, Undistorter* undistorter, Output3DWrapper* outputW
     int runningIDX=0;
     float fakeTimeStamp = 0;
 
-//    for(unsigned int i = 0; i < numFrames; i++)
-    for(unsigned int i = 0; i < 5; i++)
+    for(unsigned int i = 0; i < numFrames; i++)
     {
         if(lsdDone.getValue())
             break;
@@ -180,7 +180,7 @@ void run(SlamSystem * system, Undistorter* undistorter, Output3DWrapper* outputW
             system->trackFrame(image.data, runningIDX, hz == 0, fakeTimeStamp);
         }
         
-        printTrans(system->getCurrentPoseEstimateScale().matrix());
+        //printTrans(system->getCurrentPoseEstimateScale().matrix());
         //gui.pose.assignValue(system->getCurrentPoseEstimateScale());
 
         runningIDX++;
@@ -189,10 +189,10 @@ void run(SlamSystem * system, Undistorter* undistorter, Output3DWrapper* outputW
         if(fullResetRequested)
         {
             LOGD("FULL RESET!\n");
-            //delete system;
+            delete system;
 
-            //system = new SlamSystem(w, h, K, doSlam);
-            //system->setVisualization(outputWrapper);
+            system = new SlamSystem(w, h, K, doSlam);
+            system->setVisualization(outputWrapper);
 
             fullResetRequested = false;
             runningIDX = 0;
@@ -240,11 +240,11 @@ Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz) {
 	Intrinsics::getInstance(fx, fy, cx, cy);
 
 //	gui.initImages();
-//	Output3DWrapper* outputWrapper = new PangolinOutput3DWrapper(w, h, gui);
+	outputWrapper = new AndroidOutput3DWrapper(w, h);
 
 	// make slam system
 	slamSystem = new SlamSystem(w, h, K, doSlam);
-//	slamSystem->setVisualization(outputWrapper);
+	slamSystem->setVisualization(outputWrapper);
 
     // open image files: first try to open as file.
 	std::string source = IMAGE_DIR;
@@ -283,7 +283,7 @@ Java_com_tc_tar_TARNativeInterface_nativeDestroy(JNIEnv* env, jobject thiz) {
 JNIEXPORT void JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeInitGL(JNIEnv* env, jobject thiz) {
 	LOGD("nativeInitGL");
-	boost::thread lsdThread(run, slamSystem, undistorter, (Output3DWrapper* )NULL, K);    
+	boost::thread lsdThread(run, slamSystem, undistorter, outputWrapper, K);
 }
 
 //resize window (might only work once)
@@ -295,9 +295,9 @@ Java_com_tc_tar_TARNativeInterface_nativeResize(JNIEnv* env, jobject thiz , jint
 //render and process a new frame
 JNIEXPORT void JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeRender(JNIEnv* env, jobject thiz) {
-//    LOGD("nativeRender");
+    LOGD("nativeRender");
     
-    //run_once(slamSystem, undistorter, NULL, K);
+    run_once(slamSystem, undistorter, NULL, K);
 }
 
 //forward keyboard to LSD
@@ -306,5 +306,94 @@ Java_com_tc_tar_TARNativeInterface_nativeKey(JNIEnv* env, jobject thiz, jint key
     LOGD("nativeKey: keycode=%d\n", keycode);
 }
 
+JNIEXPORT jfloatArray JNICALL
+Java_com_tc_tar_TARNativeInterface_nativeGetIntrinsics(JNIEnv* env, jobject thiz) {
+    LOGD("nativeKey: nativeGetIntrinsics\n");
+    
+    jfloatArray result;
+    result = env->NewFloatArray(4);
+    if (result == NULL) {
+        return NULL; /* out of memory error thrown */
+    }
+    
+    jfloat array1[4];
+    array1[0] = Intrinsics::getInstance().cx();
+    array1[1] = Intrinsics::getInstance().cy();
+    array1[2] = Intrinsics::getInstance().fx();
+    array1[3] = Intrinsics::getInstance().fy();
+    
+    env->SetFloatArrayRegion(result, 0, 4, array1);
+    return result;
+}
+
+JNIEXPORT jintArray JNICALL
+Java_com_tc_tar_TARNativeInterface_nativeGetResolution(JNIEnv* env, jobject thiz) {
+    LOGD("nativeKey: nativeGetResolution\n");
+    jintArray result;
+    result = env->NewIntArray(2);
+    if (result == NULL) {
+        return NULL; /* out of memory error thrown */
+    }
+    jint array1[2];
+    array1[0] = Resolution::getInstance().width();
+    array1[1] = Resolution::getInstance().height();
+
+    env->SetIntArrayRegion(result, 0, 2, array1);
+    return result;
+}
+
+JNIEXPORT jfloatArray JNICALL
+Java_com_tc_tar_TARNativeInterface_nativeGetPose(JNIEnv* env, jobject thiz) {
+    //LOGD("nativeKey: nativeGetPose\n");
+    assert (slamSystem != NULL);
+    jfloatArray result;
+    int length = 16;
+    result = env->NewFloatArray(length);
+    if (result == NULL) {
+        return NULL; /* out of memory error thrown */
+    }
+
+    Sophus::Matrix4f m = slamSystem->getCurrentPoseEstimateScale().matrix();
+    GLfloat* pose = m.data();
+    jfloat array1[length];
+    for (int i=0; i<length; ++i) {
+        array1[i] = pose[i];    // TODO: use memcpy
+    }
+
+    env->SetFloatArrayRegion(result, 0, length, array1);
+    return result;
+}
+
+JNIEXPORT jfloatArray JNICALL
+Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFramePose(JNIEnv* env, jobject thiz) {
+    assert (slamSystem != NULL);
+    AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)outputWrapper;
+    std::map<int, Keyframe *>& keyframes = output->getAllKeyframes();
+
+    jfloatArray result;
+    int length = keyframes.size() * 16;
+    result = env->NewFloatArray(length);
+    if (result == NULL) {
+        return NULL; /* out of memory error thrown */
+    }
+    jfloat array1[length];
+
+    int offset = 0;
+    for(std::map<int, Keyframe *>::iterator i = keyframes.begin(); i != keyframes.end(); ++i)
+    {
+        //Don't render first five, according to original code
+        if(i->second->initId >= 5)
+        {
+            Sophus::Matrix4f m = i->second->camToWorld.matrix();
+            GLfloat* pose = m.data();
+            for (int i=0; i<16; ++i) {
+                array1[i + offset] = pose[i];   // TODO: use memcpy
+            }
+            offset += 16;
+        }
+    }
+    env->SetFloatArrayRegion(result, 0, length, array1);
+    return result;
+}
 
 }

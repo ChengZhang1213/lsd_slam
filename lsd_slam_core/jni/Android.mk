@@ -36,10 +36,11 @@ LOCAL_SRC_FILES += \
     $(LSD_PATH)/GlobalMapping/TrackableKeyFrameSearch.cpp \
     $(LSD_PATH)/util/opengl_helper.cpp \
     $(LSD_PATH)/util/logger.cpp \
-    $(LSD_PATH)/lsd_jni.cpp \
+    $(LSD_PATH)/lsd_jni.cpp 
 
 LOCAL_SRC_FILES += \
     $(LSD_PATH)/IOWrapper/OpenCV/ImageDisplay_OpenCV.cpp \
+    $(LSD_PATH)/IOWrapper/Android/AndroidOutput3DWrapper.cpp
 
 LOCAL_C_INCLUDES += \
     $(LSD_PATH) \
