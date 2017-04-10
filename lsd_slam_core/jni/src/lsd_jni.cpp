@@ -396,4 +396,97 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFramePoses(JNIEnv* env, jobjec
     return result;
 }
 
+JNIEXPORT jobjectArray JNICALL
+Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject thiz) {
+    //LOGD("nativeGetAllKeyFrames\n");
+    assert (slamSystem != NULL);
+    AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)outputWrapper;
+    std::map<int, Keyframe *>& keyframes = output->getAllKeyframes();
+    
+    jclass classKeyFrame = env->FindClass("com/tc/tar/LSDKeyFrame");
+    std::list<jobject> objectList;
+
+    for(std::map<int, Keyframe *>::iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
+        //Don't render first five, according to original code
+        if(i->second->initId >= 5) {
+            Keyframe::MyVertex* vertices = i->second->computeVertices();
+
+            int pointNum = i->second->points;
+            jfloat points[pointNum * 3];
+            jint colors[pointNum];
+            int points_offset = 0;
+            int colors_offset = 0;
+            for (int j=0; j<pointNum; ++j) {
+                memcpy(points + points_offset, vertices[j].point, 3 * sizeof(float));
+                colors[colors_offset] = (vertices[j].color[0] << 24) + (vertices[j].color[1] << 16) + (vertices[j].color[2] << 8) + vertices[3].color[3];
+                points_offset += 3;
+                colors_offset++;
+            }
+            delete vertices;
+
+            // new KeyFrame object
+            jmethodID initMethodID = env->GetMethodID(classKeyFrame, "<init>", "()V");
+            if (initMethodID == NULL) {
+                LOGE("Cannot find initMethodID!!!\n");
+                return NULL;
+            }
+            jobject keyFrameObject = env->NewObject(classKeyFrame, initMethodID);
+            if (keyFrameObject == NULL) {
+                LOGE("keyFrameObject is NULL!!!\n");
+                return NULL;
+            }
+
+            // set pose
+            jfloatArray poseArray = env->NewFloatArray(16);
+            Sophus::Matrix4f m = i->second->camToWorld.matrix();
+            env->SetFloatArrayRegion(poseArray, 0, 16, m.data());
+            jfieldID poseFieldID = env->GetFieldID(classKeyFrame, "pose", "[F");
+            assert (poseFieldID != NULL);
+            env->SetObjectField(keyFrameObject, poseFieldID, poseArray);
+
+            // set pointCount
+            jint pointCount = pointNum;
+            jfieldID pointCountFieldID = env->GetFieldID(classKeyFrame, "pointCount", "I");
+            assert (pointCountFieldID != NULL);
+            env->SetIntField(keyFrameObject, pointCountFieldID, pointCount);
+
+            // set points
+            jfloatArray pointsArray = env->NewFloatArray(pointNum * 3);
+            env->SetFloatArrayRegion(pointsArray, 0, pointNum * 3, points);
+            jfieldID pointsFieldID = env->GetFieldID(classKeyFrame, "points", "[F");
+            assert (pointsFieldID != NULL);
+            env->SetObjectField(keyFrameObject, pointsFieldID, pointsArray);
+
+            // set colors
+            jintArray colorsArray = env->NewIntArray(pointNum);
+            env->SetIntArrayRegion(colorsArray, 0, pointNum, colors);
+            jfieldID colorsFieldID = env->GetFieldID(classKeyFrame, "colors", "[I");
+            assert (colorsFieldID != NULL);
+            env->SetObjectField(keyFrameObject, colorsFieldID, colorsArray);
+
+            objectList.push_back(keyFrameObject);
+        }
+    }
+
+    if (objectList.empty())
+        return NULL;
+
+    // Add to result
+    jobjectArray result = env->NewObjectArray(objectList.size(), classKeyFrame, NULL);
+    int i = 0;
+    for (std::list<jobject>::iterator it = objectList.begin(); it != objectList.end(); ++it) {
+        env->SetObjectArrayElement(result, i++, *it);
+    }
+    
+    return result;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_tc_tar_TARNativeInterface_nativeGetKeyFrameCount(JNIEnv* env, jobject thiz) {
+    assert (slamSystem != NULL);
+    AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)outputWrapper;
+    std::map<int, Keyframe *>& keyframes = output->getAllKeyframes();
+    return keyframes.size();
+}
+
 }

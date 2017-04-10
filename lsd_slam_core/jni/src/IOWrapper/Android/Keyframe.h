@@ -163,6 +163,79 @@ class Keyframe
 #endif
         }
 
+        MyVertex * computeVertices() {
+            points = 0;
+            MyVertex * tmpBuffer = new MyVertex[width * height];
+
+            float my_scaledTH = 1e-3;
+            float my_absTH = 1e-1;
+            float my_scale = camToWorld.scale();
+            int my_minNearSupport = 9;
+            int my_sparsifyFactor = 1;
+
+            InputPointDense * originalInput = (InputPointDense *)pointData;
+
+            float fxi = 1/fx;
+            float fyi = 1/fy;
+            float cxi = -cx / fx;
+            float cyi = -cy / fy;
+
+            for(int y = 1; y < height - 1; y++)
+            {
+                for(int x = 1; x < width - 1; x++)
+                {
+                    if(originalInput[x + y * width].idepth <= 0)
+                        continue;
+
+                    if(my_sparsifyFactor > 1 && rand() % my_sparsifyFactor != 0)
+                        continue;
+
+                    float depth = 1 / originalInput[x + y * width].idepth;
+
+                    float depth4 = depth * depth;
+
+                    depth4 *= depth4;
+
+                    if(originalInput[x + y * width].idepth_var * depth4 > my_scaledTH)
+                        continue;
+
+                    if(originalInput[x + y * width].idepth_var * depth4 * my_scale * my_scale > my_absTH)
+                        continue;
+
+                    if(my_minNearSupport > 1)
+                    {
+                        int nearSupport = 0;
+                        for(int dx = -1; dx < 2; dx++)
+                        {
+                            for(int dy = -1; dy < 2; dy++)
+                            {
+                                int idx = x + dx + (y + dy) * width;
+                                if(originalInput[idx].idepth > 0)
+                                {
+                                    float diff = originalInput[idx].idepth - 1.0f / depth;
+                                    if(diff * diff < 2 * originalInput[x + y * width].idepth_var)
+                                        nearSupport++;
+                                }
+                            }
+                        }
+
+                        if(nearSupport < my_minNearSupport)
+                            continue;
+                    }
+
+                    tmpBuffer[points].point[0] = (x * fxi + cxi) * depth;
+                    tmpBuffer[points].point[1] = (y * fyi + cyi) * depth;
+                    tmpBuffer[points].point[2] = depth;
+                    tmpBuffer[points].color[3] = 100;
+                    tmpBuffer[points].color[2] = originalInput[x + y * width].color[0];
+                    tmpBuffer[points].color[1] = originalInput[x + y * width].color[1];
+                    tmpBuffer[points].color[0] = originalInput[x + y * width].color[2];
+                    points++;
+                }
+            }
+            return tmpBuffer;
+        }
+
         void drawPoints()
         {
 #ifdef NATIVE_DRAW
