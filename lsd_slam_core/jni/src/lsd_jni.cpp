@@ -343,7 +343,7 @@ Java_com_tc_tar_TARNativeInterface_nativeGetResolution(JNIEnv* env, jobject thiz
 }
 
 JNIEXPORT jfloatArray JNICALL
-Java_com_tc_tar_TARNativeInterface_nativeGetPose(JNIEnv* env, jobject thiz) {
+Java_com_tc_tar_TARNativeInterface_nativeGetCurrentPose(JNIEnv* env, jobject thiz) {
     //LOGD("nativeKey: nativeGetPose\n");
     assert (slamSystem != NULL);
     jfloatArray result;
@@ -365,7 +365,7 @@ Java_com_tc_tar_TARNativeInterface_nativeGetPose(JNIEnv* env, jobject thiz) {
 }
 
 JNIEXPORT jfloatArray JNICALL
-Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFramePose(JNIEnv* env, jobject thiz) {
+Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFramePoses(JNIEnv* env, jobject thiz) {
     assert (slamSystem != NULL);
     AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)outputWrapper;
     std::map<int, Keyframe *>& keyframes = output->getAllKeyframes();
