@@ -418,7 +418,7 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject th
             int colors_offset = 0;
             for (int j=0; j<pointNum; ++j) {
                 memcpy(points + points_offset, vertices[j].point, 3 * sizeof(float));
-                colors[colors_offset] = (vertices[j].color[0] << 24) + (vertices[j].color[1] << 16) + (vertices[j].color[2] << 8) + vertices[3].color[3];
+                colors[colors_offset] = (vertices[j].color[3] << 24) + (vertices[j].color[2] << 16) + (vertices[j].color[2] << 8) + vertices[j].color[0];
                 points_offset += 3;
                 colors_offset++;
             }
