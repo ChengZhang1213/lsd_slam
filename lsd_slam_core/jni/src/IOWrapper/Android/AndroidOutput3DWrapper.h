@@ -48,7 +48,8 @@ class AndroidOutput3DWrapper : public Output3DWrapper
         virtual void publishTrajectoryIncrement(Eigen::Matrix<float, 3, 1> pt, std::string identifier);
 
         virtual void publishDebugInfo(Eigen::Matrix<float, 20, 1> data);
-        std::map<int, Keyframe *>& getAllKeyframes() { return keyframes.getReference(); };
+        ThreadMutexObject<std::map<int, Keyframe *> >& getKeyframes() { return keyframes; }
+        int getKeyframesCount() { return keyframes.getReference().size(); }
 
         int publishLvl;
 

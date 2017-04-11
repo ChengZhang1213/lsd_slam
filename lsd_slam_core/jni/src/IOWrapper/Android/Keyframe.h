@@ -16,6 +16,7 @@
 #include "util/opengl_helper.h"
 #include "sophus/sim3.hpp"
 #include <iostream>
+#include "util/logger.h"
 
 struct InputPointDense
 {
@@ -37,7 +38,8 @@ class Keyframe
          : pointData(0),
            hasVbo(false),
            points(0),
-           needsUpdate(false)
+           needsUpdate(false),
+           vertices(NULL)
         {}
 
         virtual ~Keyframe()
@@ -47,6 +49,9 @@ class Keyframe
 
             if(hasVbo)
                 glDeleteBuffers(1, &vbo);
+
+            if (vertices)
+                delete vertices;
         }
 
         struct MyVertex
@@ -62,6 +67,7 @@ class Keyframe
                 pointData = new unsigned char[width * height * sizeof(InputPointDense)];
             }
 
+            LOGD("updatePoints: initId=%d, id=%d\n", initId, id);
             memcpy(pointData, newFrame->pointData, width * height * sizeof(InputPointDense));
 
             needsUpdate = true;
@@ -164,8 +170,17 @@ class Keyframe
         }
 
         MyVertex * computeVertices() {
-            points = 0;
+            if (vertices != NULL && !needsUpdate)
+                return vertices;
+        
+            if (vertices != NULL) {
+                delete vertices;
+                vertices = NULL;
+                points = 0;
+            }
+            
             MyVertex * tmpBuffer = new MyVertex[width * height];
+            LOGD("inidId=%d, id=%d\n", initId, id);
 
             float my_scaledTH = 1e-3;
             float my_absTH = 1e-1;
@@ -233,7 +248,11 @@ class Keyframe
                     points++;
                 }
             }
-            return tmpBuffer;
+
+            needsUpdate = false;
+            vertices = tmpBuffer;
+            
+            return vertices;
         }
 
         void drawPoints()
@@ -338,6 +357,7 @@ class Keyframe
         GLuint vbo;
         int points;
         bool needsUpdate;
+        MyVertex * vertices;
 };
 
 

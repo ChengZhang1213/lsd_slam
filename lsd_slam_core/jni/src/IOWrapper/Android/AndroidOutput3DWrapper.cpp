@@ -77,10 +77,14 @@ void AndroidOutput3DWrapper::publishKeyframe(Frame* f)
         pc[idx].color[2] = color[idx];
         pc[idx].color[3] = color[idx];
     }
+    
+    lock.unlock();
 
-    //Exists
-    if(keyframes.getReference().find(fMsg->id) != keyframes.getReference().end())
+    // addKeyframe
+    boost::mutex::scoped_lock lock2(keyframes.getMutex());
+    if(keyframes.getReference().find(fMsg->id) != keyframes.getReference().end())   // Exists
     {
+        LOGD("updatePoints id=%d\n", fMsg->id);
         keyframes.getReference()[fMsg->id]->updatePoints(fMsg);
         delete fMsg;
     }
@@ -88,9 +92,9 @@ void AndroidOutput3DWrapper::publishKeyframe(Frame* f)
     {
         fMsg->initId = keyframes.getReference().size();
         keyframes.getReference()[fMsg->id] = fMsg;
+        LOGD("addKeyframe: initId=%d, id=%d\n", fMsg->initId, fMsg->id);
     }
-
-    lock.unlock();
+    lock2.unlock();
 }
 
 void AndroidOutput3DWrapper::publishTrackedFrame(Frame* kf)
@@ -117,13 +121,17 @@ void AndroidOutput3DWrapper::publishKeyframeGraph(KeyFrameGraph* graph)
 
     graph->keyframesAllMutex.unlock_shared();
 
+    // updateKeyframePoses
+    boost::mutex::scoped_lock lock(keyframes.getMutex());
     for(int i = 0; i < num; i++)
     {
         if(keyframes.getReference().find(framePoseData[i].id) != keyframes.getReference().end())
         {
+            LOGD("updateKeyframePoses: id=%d, dist=%f\n", framePoseData[i].id, computeDist(keyframes.getReference()[framePoseData[i].id]->camToWorld.data(), &framePoseData[i].camToWorld[0], 7));
             memcpy(keyframes.getReference()[framePoseData[i].id]->camToWorld.data(), &framePoseData[i].camToWorld[0], sizeof(float) * 7);
         }
     }
+    lock.unlock();
 
     delete [] buffer;
 }

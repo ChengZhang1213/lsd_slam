@@ -227,7 +227,6 @@ Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz) {
 	h_inp = undistorter->getInputHeight();
 	LOGD("w=%d, h=%d, w_inp=%d, h_inp=%d\n", w, h, w_inp, h_inp);
 
-//   GUI gui;
 	float fx = undistorter->getK().at<double>(0, 0);
 	float fy = undistorter->getK().at<double>(1, 1);
 	float cx = undistorter->getK().at<double>(2, 0);
@@ -239,7 +238,6 @@ Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz) {
 	Resolution::getInstance(w, h);
 	Intrinsics::getInstance(fx, fy, cx, cy);
 
-//	gui.initImages();
 	outputWrapper = new AndroidOutput3DWrapper(w, h);
 
 	// make slam system
@@ -368,7 +366,7 @@ JNIEXPORT jfloatArray JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFramePoses(JNIEnv* env, jobject thiz) {
     assert (slamSystem != NULL);
     AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)outputWrapper;
-    std::map<int, Keyframe *>& keyframes = output->getAllKeyframes();
+    std::map<int, Keyframe *>& keyframes = output->getKeyframes().getReference();
 
     jfloatArray result;
     int length = keyframes.size() * 16;
@@ -401,12 +399,13 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject th
     //LOGD("nativeGetAllKeyFrames\n");
     assert (slamSystem != NULL);
     AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)outputWrapper;
-    std::map<int, Keyframe *>& keyframes = output->getAllKeyframes();
+    ThreadMutexObject<std::map<int, Keyframe *> >& keyframes = output->getKeyframes();
     
     jclass classKeyFrame = env->FindClass("com/tc/tar/LSDKeyFrame");
     std::list<jobject> objectList;
 
-    for(std::map<int, Keyframe *>::iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
+    boost::mutex::scoped_lock lock(keyframes.getMutex());
+    for(std::map<int, Keyframe *>::iterator i = keyframes.getReference().begin(); i != keyframes.getReference().end(); ++i) {
         //Don't render first five, according to original code
         if(i->second->initId >= 5) {
             Keyframe::MyVertex* vertices = i->second->computeVertices();
@@ -418,11 +417,10 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject th
             int colors_offset = 0;
             for (int j=0; j<pointNum; ++j) {
                 memcpy(points + points_offset, vertices[j].point, 3 * sizeof(float));
-                colors[colors_offset] = (vertices[j].color[3] << 24) + (vertices[j].color[2] << 16) + (vertices[j].color[2] << 8) + vertices[j].color[0];
+                colors[colors_offset] = (vertices[j].color[3] << 24) + (vertices[j].color[0] << 16) + (vertices[j].color[1] << 8) + vertices[j].color[2];
                 points_offset += 3;
                 colors_offset++;
             }
-            delete vertices;
 
             // new KeyFrame object
             jmethodID initMethodID = env->GetMethodID(classKeyFrame, "<init>", "()V");
@@ -467,7 +465,8 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject th
             objectList.push_back(keyFrameObject);
         }
     }
-
+    lock.unlock();
+    
     if (objectList.empty())
         return NULL;
 
@@ -485,8 +484,7 @@ JNIEXPORT jint JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeGetKeyFrameCount(JNIEnv* env, jobject thiz) {
     assert (slamSystem != NULL);
     AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)outputWrapper;
-    std::map<int, Keyframe *>& keyframes = output->getAllKeyframes();
-    return keyframes.size();
+    return output->getKeyframesCount();
 }
 
 }
