@@ -177,16 +177,18 @@ class Keyframe
             if (vertices != NULL) {
                 delete vertices;
                 vertices = NULL;
-                points = 0;
             }
 
+            points = 0;
             LOGD("inidId=%d, id=%d\n", initId, id);
             MyVertex * tmpBuffer = new MyVertex[width * height];
             int num = computeVertices(tmpBuffer, toWorldCoord);
             points += num;
 
             needsUpdate = false;
-            vertices = tmpBuffer;
+            vertices = new MyVertex[points];
+            memcpy(vertices, tmpBuffer, sizeof(float) * points);
+            delete tmpBuffer;
             
             return vertices;
         }

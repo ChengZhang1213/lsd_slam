@@ -335,8 +335,8 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject th
             Keyframe::MyVertex* vertices = i->second->computeVertices(true);
 
             int pointNum = i->second->points;
-            jfloat points[pointNum * 3];
-            jint colors[pointNum];
+            jfloat* points = new jfloat[pointNum * 3];
+            jint* colors = new jint[pointNum];
             int points_offset = 0;
             int colors_offset = 0;
             for (int j=0; j<pointNum; ++j) {
@@ -387,6 +387,11 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject th
             env->SetObjectField(keyFrameObject, colorsFieldID, colorsArray);
 
             objectList.push_back(keyFrameObject);
+
+            delete points;
+            points = NULL;
+            delete colors;
+            colors = NULL;
         }
     }
     lock.unlock();
@@ -399,6 +404,12 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject th
     int i = 0;
     for (std::list<jobject>::iterator it = objectList.begin(); it != objectList.end(); ++it) {
         env->SetObjectArrayElement(result, i++, *it);
+    }
+
+    // Release
+    env->DeleteLocalRef(classKeyFrame);
+    for (std::list<jobject>::iterator it = objectList.begin(); it != objectList.end(); ++it) {
+        env->DeleteLocalRef(*it);
     }
     
     return result;
