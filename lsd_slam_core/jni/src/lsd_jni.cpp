@@ -332,7 +332,7 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject th
     for(std::map<int, Keyframe *>::iterator i = keyframes.getReference().begin(); i != keyframes.getReference().end(); ++i) {
         //Don't render first five, according to original code
         if(i->second->initId >= cutFirstNKf) {
-            Keyframe::MyVertex* vertices = i->second->computeVertices();
+            Keyframe::MyVertex* vertices = i->second->computeVertices(true);
 
             int pointNum = i->second->points;
             jfloat points[pointNum * 3];
@@ -375,7 +375,7 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject th
             // set points
             jfloatArray pointsArray = env->NewFloatArray(pointNum * 3);
             env->SetFloatArrayRegion(pointsArray, 0, pointNum * 3, points);
-            jfieldID pointsFieldID = env->GetFieldID(classKeyFrame, "points", "[F");
+            jfieldID pointsFieldID = env->GetFieldID(classKeyFrame, "worldPoints", "[F");
             assert (pointsFieldID != NULL);
             env->SetObjectField(keyFrameObject, pointsFieldID, pointsArray);
 

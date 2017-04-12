@@ -170,7 +170,7 @@ class Keyframe
 #endif
         }
 
-        MyVertex * computeVertices() {
+        MyVertex * computeVertices(bool toWorldCoord) {
             if (vertices != NULL && !needsUpdate)
                 return vertices;
         
@@ -182,7 +182,7 @@ class Keyframe
 
             LOGD("inidId=%d, id=%d\n", initId, id);
             MyVertex * tmpBuffer = new MyVertex[width * height];
-            int num = computeVertices(tmpBuffer, false);
+            int num = computeVertices(tmpBuffer, toWorldCoord);
             points += num;
 
             needsUpdate = false;
