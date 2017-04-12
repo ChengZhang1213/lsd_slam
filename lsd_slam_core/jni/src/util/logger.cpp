@@ -1,6 +1,5 @@
 #include "util/logger.h"
 #include <GLES/gl.h>
-#include <cmath>
 
 void printTrans(const Sophus::Sim3f::Transformation& trans) {
     std::ostringstream out;
@@ -25,12 +24,4 @@ void dumpCurrentMatrix() {
     GLfloat matrix[16];
     glGetFloatv (GL_MODELVIEW_MATRIX, matrix);
     printMatrix4x4(matrix);
-}
-
-float computeDist(float* a, float* b, int size) {
-    float dist = 0.0f;
-    for (int i=0; i<size; ++i) {
-        dist += std::pow(a[i] - b[i], 2);
-    }
-    return std::sqrt(dist);
 }

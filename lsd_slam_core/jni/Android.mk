@@ -34,8 +34,8 @@ LOCAL_SRC_FILES += \
     $(LSD_PATH)/GlobalMapping/KeyFrameGraph.cpp \
     $(LSD_PATH)/GlobalMapping/g2oTypeSim3Sophus.cpp \
     $(LSD_PATH)/GlobalMapping/TrackableKeyFrameSearch.cpp \
-    $(LSD_PATH)/util/opengl_helper.cpp \
     $(LSD_PATH)/util/logger.cpp \
+    $(LSD_PATH)/util/misc.cpp \
     $(LSD_PATH)/lsd_jni.cpp 
 
 LOCAL_SRC_FILES += \

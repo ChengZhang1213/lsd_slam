@@ -250,6 +250,10 @@ extern bool saveAllTrackingStagesInternal;
 
 extern bool continuousPCOutput;
 
+// aarontang add <<
+extern int cutFirstNKf;
+// aarontang end >>
+
 
 /// Relative path of calibration file, map saving directory etc. for live_odometry
 extern std::string packagePath;

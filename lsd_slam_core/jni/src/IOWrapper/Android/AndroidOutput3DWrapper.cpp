@@ -127,7 +127,6 @@ void AndroidOutput3DWrapper::publishKeyframeGraph(KeyFrameGraph* graph)
     {
         if(keyframes.getReference().find(framePoseData[i].id) != keyframes.getReference().end())
         {
-            LOGD("updateKeyframePoses: id=%d, dist=%f\n", framePoseData[i].id, computeDist(keyframes.getReference()[framePoseData[i].id]->camToWorld.data(), &framePoseData[i].camToWorld[0], 7));
             memcpy(keyframes.getReference()[framePoseData[i].id]->camToWorld.data(), &framePoseData[i].camToWorld[0], sizeof(float) * 7);
         }
     }

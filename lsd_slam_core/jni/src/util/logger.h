@@ -43,6 +43,5 @@ void printTrans(const Sophus::Sim3f::Transformation& trans);
 void printMatrix4f(const Sophus::Matrix4f& m);
 void printMatrix4x4(GLfloat* m);
 void dumpCurrentMatrix();
-float computeDist(float* a, float* b, int size);
 
 #endif
