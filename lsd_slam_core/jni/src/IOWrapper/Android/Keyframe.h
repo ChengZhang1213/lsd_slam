@@ -179,10 +179,36 @@ class Keyframe
                 vertices = NULL;
                 points = 0;
             }
-            
-            MyVertex * tmpBuffer = new MyVertex[width * height];
-            LOGD("inidId=%d, id=%d\n", initId, id);
 
+            LOGD("inidId=%d, id=%d\n", initId, id);
+            MyVertex * tmpBuffer = new MyVertex[width * height];
+            int num = computeVertices(tmpBuffer, false);
+            points += num;
+
+            needsUpdate = false;
+            vertices = tmpBuffer;
+            
+            return vertices;
+        }
+
+        int flushPC(std::ofstream* f) {
+            LOGD("initId=%d, id=%d\n", initId, id);
+            MyVertex* tmpBuffer = new MyVertex[width*height];
+            int num = computeVertices(tmpBuffer, true);
+
+        	for(int i=0;i<num;i++)
+        	{
+        		f->write((const char *)tmpBuffer[i].point,3*sizeof(float));
+        		float color = tmpBuffer[i].color[0] / 255.0;
+        		f->write((const char *)&color,sizeof(float));
+        	}
+        	delete tmpBuffer;
+
+        	LOGD("Done flushing frame %d (%d points)!\n", this->id, num);
+        	return num;
+        }
+
+        int computeVertices(MyVertex* vertices, bool toWorldCoord) {
             float my_scaledTH = 1e-3;
             float my_absTH = 1e-1;
             float my_scale = camToWorld.scale();
@@ -196,6 +222,7 @@ class Keyframe
             float cxi = -cx / fx;
             float cyi = -cy / fy;
 
+            int num = 0;
             for(int y = 1; y < height - 1; y++)
             {
                 for(int x = 1; x < width - 1; x++)
@@ -239,98 +266,25 @@ class Keyframe
                             continue;
                     }
 
-                    tmpBuffer[points].point[0] = (x * fxi + cxi) * depth;
-                    tmpBuffer[points].point[1] = (y * fyi + cyi) * depth;
-                    tmpBuffer[points].point[2] = depth;
-                    tmpBuffer[points].color[3] = 100;
-                    tmpBuffer[points].color[2] = originalInput[x + y * width].color[0];
-                    tmpBuffer[points].color[1] = originalInput[x + y * width].color[1];
-                    tmpBuffer[points].color[0] = originalInput[x + y * width].color[2];
-                    points++;
+                    if (toWorldCoord) {
+                        Sophus::Vector3f pt = camToWorld * (Sophus::Vector3f((x*fxi + cxi), (y*fyi + cyi), 1) * depth);
+                        vertices[num].point[0] = pt[0];
+                        vertices[num].point[1] = pt[1];
+                        vertices[num].point[2] = pt[2];
+                    } else {
+                        vertices[num].point[0] = (x * fxi + cxi) * depth;
+                        vertices[num].point[1] = (y * fyi + cyi) * depth;
+                        vertices[num].point[2] = depth;
+                    }
+                    vertices[num].color[3] = 100;
+                    vertices[num].color[2] = originalInput[x + y * width].color[0];
+                    vertices[num].color[1] = originalInput[x + y * width].color[1];
+                    vertices[num].color[0] = originalInput[x + y * width].color[2];
+                    num++;
                 }
             }
 
-            needsUpdate = false;
-            vertices = tmpBuffer;
-            
-            return vertices;
-        }
-
-        int flushPC(std::ofstream* f) {
-            LOGD("initId=%d, id=%d\n", initId, id);
-            MyVertex* tmpBuffer = new MyVertex[width*height];
-            float my_scaledTH = 1e-3;
-            float my_absTH = 1e-1;
-            float my_scale = camToWorld.scale();
-            int my_minNearSupport = 9;
-            int my_sparsifyFactor = 1;
-
-            InputPointDense * originalInput = (InputPointDense *)pointData;
-
-            float fxi = 1/fx;
-            float fyi = 1/fy;
-            float cxi = -cx / fx;
-            float cyi = -cy / fy;
-        	int num = 0;
-        	for(int y=1;y<height-1;y++)
-        	{
-        		for(int x=1;x<width-1;x++)
-        		{
-        			if(originalInput[x+y*width].idepth <= 0) continue;
-
-        			if(my_sparsifyFactor > 1 && rand()%my_sparsifyFactor != 0) continue;
-
-        			float depth = 1 / originalInput[x+y*width].idepth;
-        			float depth4 = depth*depth; depth4*= depth4;
-
-        			if(originalInput[x+y*width].idepth_var * depth4 > my_scaledTH)
-        				continue;
-
-        			if(originalInput[x+y*width].idepth_var * depth4 * my_scale*my_scale > my_absTH)
-        				continue;
-
-        			if(my_minNearSupport > 1)
-        			{
-        				int nearSupport = 0;
-        				for(int dx=-1;dx<2;dx++)
-        					for(int dy=-1;dy<2;dy++)
-        					{
-        						int idx = x+dx+(y+dy)*width;
-        						if(originalInput[idx].idepth > 0)
-        						{
-        							float diff = originalInput[idx].idepth - 1.0f / depth;
-        							if(diff*diff < 2*originalInput[x+y*width].idepth_var)
-        								nearSupport++;
-        						}
-        					}
-
-        				if(nearSupport < my_minNearSupport)
-        					continue;
-        			}
-        			Sophus::Vector3f pt = camToWorld * (Sophus::Vector3f((x*fxi + cxi), (y*fyi + cyi), 1) * depth);
-        			tmpBuffer[num].point[0] = pt[0];
-        			tmpBuffer[num].point[1] = pt[1];
-        			tmpBuffer[num].point[2] = pt[2];
-        			tmpBuffer[num].color[3] = 100;
-        			tmpBuffer[num].color[2] = originalInput[x+y*width].color[0];
-        			tmpBuffer[num].color[1] = originalInput[x+y*width].color[1];
-        			tmpBuffer[num].color[0] = originalInput[x+y*width].color[2];
-        			num++;
-        		}
-    		}
-
-        	for(int i=0;i<num;i++)
-        	{
-        		f->write((const char *)tmpBuffer[i].point,3*sizeof(float));
-        		float color = tmpBuffer[i].color[0] / 255.0;
-        		f->write((const char *)&color,sizeof(float));
-        	}
-        	//	*f << tmpBuffer[i].point[0] << " " << tmpBuffer[i].point[1] << " " << tmpBuffer[i].point[2] << " " << (tmpBuffer[i].color[0] / 255.0) << "\n";
-
-        	delete tmpBuffer;
-
-        	LOGD("Done flushing frame %d (%d points)!\n", this->id, num);
-        	return num;
+            return num;
         }
 
         void drawPoints()
