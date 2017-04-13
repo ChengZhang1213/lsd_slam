@@ -23,8 +23,7 @@
 #include "misc.h"
 
 
-// TODO: remove hard code
-#define CALIB_FILE "/sdcard/LSD/cameraCalibration.cfg"
+// FIXME: remove hard code
 #define IMAGE_DIR "/sdcard/LSD/images"
 
 using namespace lsd_slam;
