@@ -653,8 +653,6 @@ void SlamSystem::addTimingSamples()
 
 void SlamSystem::debugDisplayDepthMap()
 {
-    // TODO: aaron temp marked, re-open in the future
-#if 0
 	map->debugPlotDepthMap();
 	double scale = 1;
 	if(currentKeyFrame != 0 && currentKeyFrame != 0)
@@ -681,11 +679,11 @@ void SlamSystem::debugDisplayDepthMap()
 			1e-6 * (float)keyFrameGraph->totalPoints);
 
 
-	if(onSceenInfoDisplay)
-		printMessageOnCVImage(map->debugImageDepth, buf1, buf2);
+	//if(onSceenInfoDisplay)
+	//	printMessageOnCVImage(map->debugImageDepth, buf1, buf2);
 
 	outputWrapper->updateImage((unsigned char *)map->debugImageDepth.data);
-
+#if 0   // aarontang masked
 	int pressedKey = Util::waitKey(1);
 	handleKey(pressedKey);
 #endif

@@ -311,19 +311,14 @@ int main( int argc, char** argv )
 	    }
 
 	    gui.preCall();
-        LOGD("preCall done. drawKeyframes\n");
 
-	    //gui.drawKeyframes();
-        //LOGD("drawKeyframes done. drawFrustum\n");
+	    gui.drawKeyframes();
 
 	    gui.drawFrustum();
-        LOGD("drawFrustum done. drawImages\n");
 
-	    //gui.drawImages();
-        //LOGD("drawImages done. postCall\n");
+	    gui.drawImages();
 
 	    gui.postCall();
-	    LOGD("postCall done.\n");
 	}
 
 	lsdDone.assignValue(true);

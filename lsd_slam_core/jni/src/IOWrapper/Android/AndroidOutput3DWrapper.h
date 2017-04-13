@@ -11,6 +11,7 @@
 #include "IOWrapper/Output3DWrapper.h"
 #include "Keyframe.h"
 #include "util/ThreadMutexObject.h"
+#include "util/Resolution.h"
 
 
 namespace lsd_slam
@@ -50,12 +51,15 @@ class AndroidOutput3DWrapper : public Output3DWrapper
         virtual void publishDebugInfo(Eigen::Matrix<float, 20, 1> data);
         ThreadMutexObject<std::map<int, Keyframe *> >& getKeyframes() { return keyframes; }
         int getKeyframesCount() { return keyframes.getReference().size(); }
+        ThreadMutexObject<unsigned char * >& getImageBuffer() { return depthImgBuffer; }
+        int getImageBufferSize() const { return Resolution::getInstance().numPixels() * 3; }
 
         int publishLvl;
 
     private:
         int width, height;
         ThreadMutexObject<std::map<int, Keyframe *> > keyframes;
+        ThreadMutexObject<unsigned char * > depthImgBuffer;
 };
 }
 

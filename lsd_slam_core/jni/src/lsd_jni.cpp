@@ -272,42 +272,8 @@ Java_com_tc_tar_TARNativeInterface_nativeGetCurrentPose(JNIEnv* env, jobject thi
     Sophus::Matrix4f m = slamSystem->getCurrentPoseEstimateScale().matrix();
     GLfloat* pose = m.data();
     jfloat array1[length];
-    for (int i=0; i<length; ++i) {
-        array1[i] = pose[i];    // TODO: use memcpy
-    }
+    memcpy(array1, pose, sizeof(jfloat) * length);
 
-    env->SetFloatArrayRegion(result, 0, length, array1);
-    return result;
-}
-
-JNIEXPORT jfloatArray JNICALL
-Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFramePoses(JNIEnv* env, jobject thiz) {
-    assert (slamSystem != NULL);
-    AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)outputWrapper;
-    std::map<int, Keyframe *>& keyframes = output->getKeyframes().getReference();
-
-    jfloatArray result;
-    int length = keyframes.size() * 16;
-    result = env->NewFloatArray(length);
-    if (result == NULL) {
-        return NULL; /* out of memory error thrown */
-    }
-    jfloat array1[length];
-
-    int offset = 0;
-    for(std::map<int, Keyframe *>::iterator i = keyframes.begin(); i != keyframes.end(); ++i)
-    {
-        //Don't render first five, according to original code
-        if(i->second->initId >= cutFirstNKf)
-        {
-            Sophus::Matrix4f m = i->second->camToWorld.matrix();
-            GLfloat* pose = m.data();
-            for (int i=0; i<16; ++i) {
-                array1[i + offset] = pose[i];   // TODO: use memcpy
-            }
-            offset += 16;
-        }
-    }
     env->SetFloatArrayRegion(result, 0, length, array1);
     return result;
 }
@@ -420,6 +386,38 @@ Java_com_tc_tar_TARNativeInterface_nativeGetKeyFrameCount(JNIEnv* env, jobject t
     assert (slamSystem != NULL);
     AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)outputWrapper;
     return output->getKeyframesCount();
+}
+
+/**
+    Get current image data
+    format: 0 means ARGB
+*/
+JNIEXPORT jbyteArray JNICALL
+Java_com_tc_tar_TARNativeInterface_nativeGetCurrentImage(JNIEnv* env, jobject thiz, jint format) {
+    assert (slamSystem != NULL);
+    AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)outputWrapper;
+    ThreadMutexObject<unsigned char* >& image = output->getImageBuffer();
+    if (image.getReference() == NULL)
+        return NULL;
+
+    boost::mutex::scoped_lock lock(image.getMutex());
+    int originSize = output->getImageBufferSize();
+    const unsigned char* originData = image.getReference();
+    int imgSize = originSize / 3 * 4;
+    unsigned char* imgData = new unsigned char[imgSize];
+    for (int i = 0; i < originSize / 3; ++i) {
+        imgData[i * 4] = originData[i * 3];
+        imgData[i * 4 + 1] = originData[i * 3 + 1];
+        imgData[i * 4 + 2] = originData[i * 3 + 2];
+        imgData[i * 4 + 3] = (unsigned char)0xff;
+    }
+    lock.unlock();
+
+    jbyteArray byteArray = env->NewByteArray(imgSize);
+    env->SetByteArrayRegion(byteArray, 0, originSize, (jbyte*)imgData);
+    
+    delete imgData;
+    return byteArray;
 }
 
 }

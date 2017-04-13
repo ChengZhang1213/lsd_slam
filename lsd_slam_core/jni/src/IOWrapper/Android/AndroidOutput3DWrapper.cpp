@@ -21,19 +21,37 @@ namespace lsd_slam
 AndroidOutput3DWrapper::AndroidOutput3DWrapper(int width, int height)
  : width(width),
    height(height),
-   publishLvl(0)
+   publishLvl(0),
+   depthImgBuffer(0)
 {
 
 }
 
 AndroidOutput3DWrapper::~AndroidOutput3DWrapper()
 {
+    if(depthImgBuffer.getValue())
+        delete [] depthImgBuffer.getValue();
 
+    boost::mutex::scoped_lock lock(keyframes.getMutex());
+    for(std::map<int, Keyframe *>::iterator i = keyframes.getReference().begin(); i != keyframes.getReference().end(); ++i)
+    {
+        delete i->second;
+    }
+    keyframes.getReference().clear();
+
+    lock.unlock();
 }
 
 void AndroidOutput3DWrapper::updateImage(unsigned char * data)
 {
-    // TODO:
+    if (depthImgBuffer.getValue() == NULL) {
+        LOGD("create image buffer");
+        depthImgBuffer.assignValue(new unsigned char[Resolution::getInstance().numPixels() * 3]);
+    }
+    
+    boost::mutex::scoped_lock lock(depthImgBuffer.getMutex());
+    memcpy(depthImgBuffer.getReference(), data, Resolution::getInstance().numPixels() * 3);
+    lock.unlock();
 }
 
 void AndroidOutput3DWrapper::publishKeyframe(Frame* f)
