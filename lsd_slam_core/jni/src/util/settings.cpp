@@ -117,7 +117,7 @@ bool manualTrackingLossIndicated = false;
 std::string packagePath = "";
 
 // aarontang add <<
-int cutFirstNKf = 5;
+int cutFirstNKf = 3;
 // aarontang end >>
 
 void handleKey(char k)

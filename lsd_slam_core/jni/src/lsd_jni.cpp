@@ -126,13 +126,15 @@ JavaVM* jvm = NULL;
 
 //init LSD
 JNIEXPORT void JNICALL
-Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz) {
+Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz, jstring calibPath) {
 	LOGD("nativeInit");
     //init jni
 	env->GetJavaVM(&jvm);
-	
-	std::string calibFile = CALIB_FILE;
-	undistorter = Undistorter::getUndistorterForFile(calibFile.c_str());
+
+	const char *calibFile = env->GetStringUTFChars(calibPath, 0);
+	LOGD("calibFile: %s\n", calibFile);
+	undistorter = Undistorter::getUndistorterForFile(calibFile);
+	env->ReleaseStringUTFChars(calibPath, calibFile);  // release resources
 	if(undistorter == 0) {
 		LOGE("need camera calibration file! (set using -c FILE)\n");
 		exit(0);
