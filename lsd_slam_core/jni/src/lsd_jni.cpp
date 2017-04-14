@@ -1,8 +1,6 @@
 #include <string.h>
 #include <jni.h>
-#include <android/log.h>
 
-#include "LiveSLAMWrapper.h"
 #include <boost/thread.hpp>
 #include "util/settings.h"
 #include "util/Parse.h"
@@ -10,15 +8,7 @@
 #include "util/ThreadMutexObject.h"
 #include "util/Intrinsics.h"
 #include "SlamSystem.h"
-#include <sstream>
-#include <fstream>
-#include <dirent.h>
-#include <algorithm>
-#include "util/Undistorter.h"
-#include "util/RawLogReader.h"
-#include "opencv2/opencv.hpp"
 #include "util/logger.h"
-#include "sophus/sim3.hpp"
 #include "Android/AndroidOutput3DWrapper.h"
 #include "misc.h"
 #include "ImageSource.h"
@@ -113,7 +103,6 @@ JNIEXPORT void JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeDestroy(JNIEnv* env, jobject thiz) {
 	LOGD("nativeDestroy\n");
 	gLsdSlam->stop();
-	LOGD("nativeDestroy done.\n");
 }
 
 JNIEXPORT void JNICALL
@@ -129,9 +118,7 @@ Java_com_tc_tar_TARNativeInterface_nativeKey(JNIEnv* env, jobject thiz, jint key
 }
 
 JNIEXPORT jfloatArray JNICALL
-Java_com_tc_tar_TARNativeInterface_nativeGetIntrinsics(JNIEnv* env, jobject thiz) {
-    LOGD("nativeKey: nativeGetIntrinsics\n");
-    
+Java_com_tc_tar_TARNativeInterface_nativeGetIntrinsics(JNIEnv* env, jobject thiz) {    
     jfloatArray result;
     result = env->NewFloatArray(4);
     if (result == NULL) {
@@ -150,7 +137,6 @@ Java_com_tc_tar_TARNativeInterface_nativeGetIntrinsics(JNIEnv* env, jobject thiz
 
 JNIEXPORT jintArray JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeGetResolution(JNIEnv* env, jobject thiz) {
-    LOGD("nativeKey: nativeGetResolution\n");
     jintArray result;
     result = env->NewIntArray(2);
     if (result == NULL) {
@@ -166,8 +152,6 @@ Java_com_tc_tar_TARNativeInterface_nativeGetResolution(JNIEnv* env, jobject thiz
 
 JNIEXPORT jfloatArray JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeGetCurrentPose(JNIEnv* env, jobject thiz) {
-    //LOGD("nativeKey: nativeGetPose\n");
-    assert (slamSystem != NULL);
     jfloatArray result;
     int length = 16;
     result = env->NewFloatArray(length);
@@ -186,7 +170,6 @@ Java_com_tc_tar_TARNativeInterface_nativeGetCurrentPose(JNIEnv* env, jobject thi
 
 JNIEXPORT jobjectArray JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject thiz) {
-    //LOGD("nativeGetAllKeyFrames\n");
     assert (gOutputWrapper != NULL);
     AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)gOutputWrapper;
     ThreadMutexObject<std::map<int, Keyframe *> >& keyframes = output->getKeyframes();
