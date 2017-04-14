@@ -21,25 +21,32 @@
 #include "sophus/sim3.hpp"
 #include "Android/AndroidOutput3DWrapper.h"
 #include "misc.h"
+#include "ImageSource.h"
+#include "Android/FilesImageSource.h"
 
 
 // FIXME: remove hard code
 #define IMAGE_DIR "/sdcard/LSD/images"
 
 using namespace lsd_slam;
-ThreadMutexObject<bool> lsdDone(false);
+boost::thread *gLsdThread = NULL;
+#if 0
+ThreadMutexObject<bool> loopDone(false);
 std::vector<std::string> files;
 int w, h, w_inp, h_inp;
 Sophus::Matrix3f K;
 Undistorter* gUndistorter = NULL;
 SlamSystem * gSlamSystem = NULL;
+#endif
 Output3DWrapper* gOutputWrapper = NULL;
+ImageSource* gImageSource = NULL;
 
-void run() {
-    LOGD("----------run-----------\n");
+#if 0
+void Loop() {
+    LOGD("Loop start\n");
     assert (gSlamSystem != NULL);
-    assert (gUndistorter != NULL);
     assert (gOutputWrapper != NULL);
+    assert (gImageSource != NULL);
     
     // get HZ
     double hz = 30;
@@ -49,7 +56,7 @@ void run() {
 
     for(unsigned int i = 0; i < files.size(); i++)
     {
-        if(lsdDone.getValue())
+        if(loopDone.getValue())
             break;
 
         cv::Mat imageDist = cv::Mat(h, w, CV_8U);
@@ -68,6 +75,7 @@ void run() {
         gUndistorter->undistort(imageDist, image);
 
         assert(image.type() == CV_8U);
+#if 0        
         if(runningIDX == 0)
         {
             gSlamSystem->randomInit(image.data, fakeTimeStamp, runningIDX);
@@ -75,6 +83,19 @@ void run() {
         else
         {
             gSlamSystem->trackFrame(image.data, runningIDX, hz == 0, fakeTimeStamp);
+        }
+#endif
+
+        while (!(gImageSource->getBuffer()->size() > 0)) continue;
+        TimestampedMat* image = gImageSource->getBuffer()->first();
+	    gImageSource->getBuffer()->popFront();
+	    if(runningIDX == 0)
+        {
+            gSlamSystem->randomInit(image->data.data, fakeTimeStamp, runningIDX);
+        }
+        else
+        {
+            gSlamSystem->trackFrame(image->data.data, runningIDX, hz == 0, fakeTimeStamp);
         }
         
         //printTrans(gSlamSystem->getCurrentPoseEstimateScale().matrix());
@@ -92,9 +113,62 @@ void run() {
             runningIDX = 0;
         }
     }
-    
-    
+    LOGD("Loop done.\n");
 }
+#endif
+
+class LsdSlamWrapper : public Notifiable {
+public:
+    LsdSlamWrapper(ImageSource* source, Output3DWrapper* output) : loopDone_(false) {
+        assert (source != NULL);
+        assert (output != NULL);
+        imageSource_ = source;
+        imageSource_->getBuffer()->setReceiver(this);
+        // make slam system
+    	slamSystem_ = new SlamSystem(source->width(), source->height(), source->K(), doSlam);
+    	slamSystem_->setVisualization(output);
+
+    	Resolution::getInstance(source->width(), source->height());
+	    Intrinsics::getInstance(source->fx(), source->fy(), source->cx(), source->cy());
+    }
+
+    SlamSystem* getSlamSystem() const {
+        return slamSystem_;
+    }
+
+    void stop() {
+        loopDone_.assignValue(true);
+    }
+    
+    void Loop() {
+        LOGD("Loop start");
+        int runningIDX = 0;
+        while (!loopDone_.getValue()) {
+            boost::unique_lock<boost::recursive_mutex> waitLock(imageSource_->getBuffer()->getMutex());
+    		while (!(imageSource_->getBuffer()->size() > 0)) {
+    		    notifyCondition.wait(waitLock);
+    		}
+    		waitLock.unlock();
+
+            TimestampedMat* image = imageSource_->getBuffer()->first();
+		    imageSource_->getBuffer()->popFront();
+            if(runningIDX == 0){
+                slamSystem_->randomInit(image->data.data, image->timestamp.toSec(), runningIDX);
+            } else {
+                slamSystem_->trackFrame(image->data.data, runningIDX, false, image->timestamp.toSec());
+            }
+            runningIDX++;
+
+            delete image;
+        }
+        LOGD("Loop exit.");
+    }
+private:
+    ImageSource* imageSource_;
+    SlamSystem* slamSystem_;
+    ThreadMutexObject<bool> loopDone_;
+};
+LsdSlamWrapper* gLsdSlam = NULL;
 
 
 extern "C"{
@@ -109,8 +183,11 @@ Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz, jstring
 
 	const char *calibFile = env->GetStringUTFChars(calibPath, 0);
 	LOGD("calibFile: %s\n", calibFile);
-	gUndistorter = Undistorter::getUndistorterForFile(calibFile);
+	gImageSource = new FilesImageSource(IMAGE_DIR);
+	gImageSource->setCalibration(calibFile);
+//	gUndistorter = Undistorter::getUndistorterForFile(calibFile);
 	env->ReleaseStringUTFChars(calibPath, calibFile);  // release resources
+#if 0
 	if(gUndistorter == NULL) {
 		LOGE("need camera calibration file! (set using -c FILE)\n");
 		exit(0);
@@ -130,12 +207,25 @@ Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz, jstring
 	
 	K << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;
 	LOGD("fx=%f, fy=%f, cx=%f, cy=%f\n", fx, fy, cx, cy);
+#endif
+
+#if 0
+    int w = gImageSource->width();
+    int h = gImageSource->height();
+    float fx = gImageSource->fx();
+    float fy = gImageSource->fy();
+    float cx = gImageSource->cx();
+    float cy = gImageSource->cy();
+    K << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;
+    LOGD("fx=%f, fy=%f, cx=%f, cy=%f\n", fx, fy, cx, cy);
 
 	Resolution::getInstance(w, h);
 	Intrinsics::getInstance(fx, fy, cx, cy);
+#endif
 
-	gOutputWrapper = new AndroidOutput3DWrapper(w, h);
-
+	gOutputWrapper = new AndroidOutput3DWrapper(gImageSource->width(), gImageSource->height());
+	
+#if 0
 	// make slam system
 	gSlamSystem = new SlamSystem(w, h, K, doSlam);
 	gSlamSystem->setVisualization(gOutputWrapper);
@@ -152,32 +242,32 @@ Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz, jstring
     else {
         LOGD("could not load file list! wrong path / file?\n");
     }
+#endif
+
+    gLsdSlam = new LsdSlamWrapper(gImageSource, gOutputWrapper);
+    boost::function0< void > f =  boost::bind(&LsdSlamWrapper::Loop, gLsdSlam);
+    boost::thread thread(f);
 }
 
 // clean up
 JNIEXPORT void JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeDestroy(JNIEnv* env, jobject thiz) {
-	LOGD("nativeDestroy");
-	lsdDone.assignValue(true);
+	LOGD("nativeDestroy\n");
+	gLsdSlam->stop();
+#if 0
+	loopDone.assignValue(true);
+	if (gLsdThread != NULL) {
+    	gLsdThread->join();
+	}
+#endif
+	LOGD("nativeDestroy done.\n");
 }
 
-// init OpenGL
 JNIEXPORT void JNICALL
-Java_com_tc_tar_TARNativeInterface_nativeInitGL(JNIEnv* env, jobject thiz) {
-	LOGD("nativeInitGL");
-	boost::thread lsdThread(run);
-}
-
-//resize window (might only work once)
-JNIEXPORT void JNICALL
-Java_com_tc_tar_TARNativeInterface_nativeResize(JNIEnv* env, jobject thiz , jint w, jint h) {
-	LOGD("nativeResize: w=%d, h=%d\n", w, h);
-}
-
-//render and process a new frame
-JNIEXPORT void JNICALL
-Java_com_tc_tar_TARNativeInterface_nativeRender(JNIEnv* env, jobject thiz) {
-    LOGD("nativeRender");
+Java_com_tc_tar_TARNativeInterface_nativeStart(JNIEnv* env, jobject thiz) {
+	LOGD("nativeStart\n");
+	gImageSource->run();
+//	gLsdThread = new boost::thread(Loop);
 }
 
 //forward keyboard to LSD
@@ -225,7 +315,7 @@ Java_com_tc_tar_TARNativeInterface_nativeGetResolution(JNIEnv* env, jobject thiz
 JNIEXPORT jfloatArray JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeGetCurrentPose(JNIEnv* env, jobject thiz) {
     //LOGD("nativeKey: nativeGetPose\n");
-    assert (gSlamSystem != NULL);
+    assert (slamSystem != NULL);
     jfloatArray result;
     int length = 16;
     result = env->NewFloatArray(length);
@@ -233,7 +323,7 @@ Java_com_tc_tar_TARNativeInterface_nativeGetCurrentPose(JNIEnv* env, jobject thi
         return NULL; /* out of memory error thrown */
     }
 
-    Sophus::Matrix4f m = gSlamSystem->getCurrentPoseEstimateScale().matrix();
+    Sophus::Matrix4f m = gLsdSlam->getSlamSystem()->getCurrentPoseEstimateScale().matrix();
     GLfloat* pose = m.data();
     jfloat array1[length];
     memcpy(array1, pose, sizeof(jfloat) * length);
@@ -245,7 +335,7 @@ Java_com_tc_tar_TARNativeInterface_nativeGetCurrentPose(JNIEnv* env, jobject thi
 JNIEXPORT jobjectArray JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject thiz) {
     //LOGD("nativeGetAllKeyFrames\n");
-    assert (gSlamSystem != NULL);
+    assert (gOutputWrapper != NULL);
     AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)gOutputWrapper;
     ThreadMutexObject<std::map<int, Keyframe *> >& keyframes = output->getKeyframes();
     
@@ -348,7 +438,7 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject th
 
 JNIEXPORT jint JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeGetKeyFrameCount(JNIEnv* env, jobject thiz) {
-    assert (gSlamSystem != NULL);
+    assert (gOutputWrapper != NULL);
     AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)gOutputWrapper;
     return output->getKeyframesCount();
 }
@@ -359,7 +449,7 @@ Java_com_tc_tar_TARNativeInterface_nativeGetKeyFrameCount(JNIEnv* env, jobject t
 */
 JNIEXPORT jbyteArray JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeGetCurrentImage(JNIEnv* env, jobject thiz, jint format) {
-    assert (gSlamSystem != NULL);
+    assert (gOutputWrapper != NULL);
     AndroidOutput3DWrapper* output = (AndroidOutput3DWrapper*)gOutputWrapper;
     ThreadMutexObject<unsigned char* >& image = output->getImageBuffer();
     if (image.getReference() == NULL)

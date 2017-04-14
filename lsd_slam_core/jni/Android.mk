@@ -30,6 +30,7 @@ LOCAL_SRC_FILES += \
     $(LSD_PATH)/Tracking/SE3Tracker.cpp \
     $(LSD_PATH)/Tracking/TrackingReference.cpp \
     $(LSD_PATH)/IOWrapper/Timestamp.cpp \
+    $(LSD_PATH)/IOWrapper/ImageSource.cpp \
     $(LSD_PATH)/GlobalMapping/FabMap.cpp \
     $(LSD_PATH)/GlobalMapping/KeyFrameGraph.cpp \
     $(LSD_PATH)/GlobalMapping/g2oTypeSim3Sophus.cpp \
@@ -40,7 +41,8 @@ LOCAL_SRC_FILES += \
 
 LOCAL_SRC_FILES += \
     $(LSD_PATH)/IOWrapper/OpenCV/ImageDisplay_OpenCV.cpp \
-    $(LSD_PATH)/IOWrapper/Android/AndroidOutput3DWrapper.cpp
+    $(LSD_PATH)/IOWrapper/Android/AndroidOutput3DWrapper.cpp \
+    $(LSD_PATH)/IOWrapper/Android/FilesImageSource.cpp
 
 LOCAL_C_INCLUDES += \
     $(LSD_PATH) \
