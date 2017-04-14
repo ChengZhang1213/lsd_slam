@@ -29,93 +29,8 @@
 #define IMAGE_DIR "/sdcard/LSD/images"
 
 using namespace lsd_slam;
-boost::thread *gLsdThread = NULL;
-#if 0
-ThreadMutexObject<bool> loopDone(false);
-std::vector<std::string> files;
-int w, h, w_inp, h_inp;
-Sophus::Matrix3f K;
-Undistorter* gUndistorter = NULL;
-SlamSystem * gSlamSystem = NULL;
-#endif
 Output3DWrapper* gOutputWrapper = NULL;
 ImageSource* gImageSource = NULL;
-
-#if 0
-void Loop() {
-    LOGD("Loop start\n");
-    assert (gSlamSystem != NULL);
-    assert (gOutputWrapper != NULL);
-    assert (gImageSource != NULL);
-    
-    // get HZ
-    double hz = 30;
-    cv::Mat image = cv::Mat(h, w, CV_8U);
-    int runningIDX=0;
-    float fakeTimeStamp = 0;
-
-    for(unsigned int i = 0; i < files.size(); i++)
-    {
-        if(loopDone.getValue())
-            break;
-
-        cv::Mat imageDist = cv::Mat(h, w, CV_8U);
-        imageDist = cv::imread(files[i], CV_LOAD_IMAGE_GRAYSCALE);
-        if(imageDist.rows != h_inp || imageDist.cols != w_inp)
-        {
-            if(imageDist.rows * imageDist.cols == 0)
-                LOGE("failed to load image %s! skipping.\n", files[i].c_str());
-            else
-                LOGE("image %s has wrong dimensions - expecting %d x %d, found %d x %d. Skipping.\n",
-                        files[i].c_str(), w, h, imageDist.cols, imageDist.rows);
-            continue;
-        }
-
-        assert(imageDist.type() == CV_8U);
-        gUndistorter->undistort(imageDist, image);
-
-        assert(image.type() == CV_8U);
-#if 0        
-        if(runningIDX == 0)
-        {
-            gSlamSystem->randomInit(image.data, fakeTimeStamp, runningIDX);
-        }
-        else
-        {
-            gSlamSystem->trackFrame(image.data, runningIDX, hz == 0, fakeTimeStamp);
-        }
-#endif
-
-        while (!(gImageSource->getBuffer()->size() > 0)) continue;
-        TimestampedMat* image = gImageSource->getBuffer()->first();
-	    gImageSource->getBuffer()->popFront();
-	    if(runningIDX == 0)
-        {
-            gSlamSystem->randomInit(image->data.data, fakeTimeStamp, runningIDX);
-        }
-        else
-        {
-            gSlamSystem->trackFrame(image->data.data, runningIDX, hz == 0, fakeTimeStamp);
-        }
-        
-        //printTrans(gSlamSystem->getCurrentPoseEstimateScale().matrix());
-
-        runningIDX++;
-        fakeTimeStamp+=0.03;
- 
-        if(fullResetRequested)
-        {
-            LOGD("FULL RESET!\n");
-            delete gSlamSystem;
-            gSlamSystem = new SlamSystem(w, h, K, doSlam);
-            gSlamSystem->setVisualization(gOutputWrapper);
-            fullResetRequested = false;
-            runningIDX = 0;
-        }
-    }
-    LOGD("Loop done.\n");
-}
-#endif
 
 class LsdSlamWrapper : public Notifiable {
 public:
@@ -185,65 +100,9 @@ Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz, jstring
 	LOGD("calibFile: %s\n", calibFile);
 	gImageSource = new FilesImageSource(IMAGE_DIR);
 	gImageSource->setCalibration(calibFile);
-//	gUndistorter = Undistorter::getUndistorterForFile(calibFile);
 	env->ReleaseStringUTFChars(calibPath, calibFile);  // release resources
-#if 0
-	if(gUndistorter == NULL) {
-		LOGE("need camera calibration file! (set using -c FILE)\n");
-		exit(0);
-	}
-
-	w = gUndistorter->getOutputWidth();
-	h = gUndistorter->getOutputHeight();
-
-	w_inp = gUndistorter->getInputWidth();
-	h_inp = gUndistorter->getInputHeight();
-	LOGD("w=%d, h=%d, w_inp=%d, h_inp=%d\n", w, h, w_inp, h_inp);
-
-	float fx = gUndistorter->getK().at<double>(0, 0);
-	float fy = gUndistorter->getK().at<double>(1, 1);
-	float cx = gUndistorter->getK().at<double>(2, 0);
-	float cy = gUndistorter->getK().at<double>(2, 1);
-	
-	K << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;
-	LOGD("fx=%f, fy=%f, cx=%f, cy=%f\n", fx, fy, cx, cy);
-#endif
-
-#if 0
-    int w = gImageSource->width();
-    int h = gImageSource->height();
-    float fx = gImageSource->fx();
-    float fy = gImageSource->fy();
-    float cx = gImageSource->cx();
-    float cy = gImageSource->cy();
-    K << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;
-    LOGD("fx=%f, fy=%f, cx=%f, cy=%f\n", fx, fy, cx, cy);
-
-	Resolution::getInstance(w, h);
-	Intrinsics::getInstance(fx, fy, cx, cy);
-#endif
 
 	gOutputWrapper = new AndroidOutput3DWrapper(gImageSource->width(), gImageSource->height());
-	
-#if 0
-	// make slam system
-	gSlamSystem = new SlamSystem(w, h, K, doSlam);
-	gSlamSystem->setVisualization(gOutputWrapper);
-
-    // open image files: first try to open as file.
-	std::string source = IMAGE_DIR;
-
-    if(getdir(source, files) >= 0) {
-        LOGD("found %d image files in folder %s!\n", (int)files.size(), source.c_str());
-    }
-    else if(getFile(source, files) >= 0) {
-        LOGD("found %d image files in file %s!\n", (int)files.size(), source.c_str());
-    }
-    else {
-        LOGD("could not load file list! wrong path / file?\n");
-    }
-#endif
-
     gLsdSlam = new LsdSlamWrapper(gImageSource, gOutputWrapper);
     boost::function0< void > f =  boost::bind(&LsdSlamWrapper::Loop, gLsdSlam);
     boost::thread thread(f);
@@ -254,12 +113,6 @@ JNIEXPORT void JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeDestroy(JNIEnv* env, jobject thiz) {
 	LOGD("nativeDestroy\n");
 	gLsdSlam->stop();
-#if 0
-	loopDone.assignValue(true);
-	if (gLsdThread != NULL) {
-    	gLsdThread->join();
-	}
-#endif
 	LOGD("nativeDestroy done.\n");
 }
 
@@ -267,7 +120,6 @@ JNIEXPORT void JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeStart(JNIEnv* env, jobject thiz) {
 	LOGD("nativeStart\n");
 	gImageSource->run();
-//	gLsdThread = new boost::thread(Loop);
 }
 
 //forward keyboard to LSD
