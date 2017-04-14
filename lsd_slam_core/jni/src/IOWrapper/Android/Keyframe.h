@@ -187,7 +187,7 @@ class Keyframe
 
             needsUpdate = false;
             vertices = new MyVertex[points];
-            memcpy(vertices, tmpBuffer, sizeof(float) * points);
+            memcpy(vertices, tmpBuffer, 3 * sizeof(float) * points);
             delete tmpBuffer;
             
             return vertices;
