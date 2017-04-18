@@ -26,7 +26,7 @@ ImageSource* gImageSource = NULL;
 
 class LsdSlamWrapper : public Notifiable {
 public:
-    LsdSlamWrapper(ImageSource* source, Output3DWrapper* output) : loopDone_(false) {
+    LsdSlamWrapper(ImageSource* source, Output3DWrapper* output) : loopDone_(true) {
         assert (source != NULL);
         assert (output != NULL);
         imageSource_ = source;
@@ -41,6 +41,16 @@ public:
 
     SlamSystem* getSlamSystem() const {
         return slamSystem_;
+    }
+
+    void start() {
+        loopDone_.assignValue(false);
+        boost::function0< void > f =  boost::bind(&LsdSlamWrapper::Loop, this);
+        boost::thread thread(f);
+    }
+    
+    bool isStarted() {
+        return !loopDone_.getValue();
     }
 
     void stop() {
@@ -136,8 +146,6 @@ Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz, jstring
 
 	gOutputWrapper = new AndroidOutput3DWrapper(gImageSource->width(), gImageSource->height());
     gLsdSlam = new LsdSlamWrapper(gImageSource, gOutputWrapper);
-    boost::function0< void > f =  boost::bind(&LsdSlamWrapper::Loop, gLsdSlam);
-    boost::thread thread(f);
 }
 
 // clean up
@@ -151,6 +159,7 @@ JNIEXPORT void JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeStart(JNIEnv* env, jobject thiz) {
 	LOGD("nativeStart\n");
 	gImageSource->run();
+	gLsdSlam->start();
 }
 
 //forward keyboard to LSD
@@ -332,12 +341,15 @@ Java_com_tc_tar_TARNativeInterface_nativeGetCurrentImage(JNIEnv* env, jobject th
     if (image.getReference() == NULL)
         return NULL;
 
-    boost::mutex::scoped_lock lock(image.getMutex());
-    int originSize = output->getImageBufferSize();
-    const unsigned char* originData = image.getReference();
-    int imgSize = originSize / 3 * 4;
+    int width = gImageSource->width();
+    int height = gImageSource->height();
+    int imgSize = width * height * 4;
     unsigned char* imgData = new unsigned char[imgSize];
-    for (int i = 0; i < originSize / 3; ++i) {
+    unsigned char* originData = NULL;
+
+    boost::mutex::scoped_lock lock(image.getMutex());
+    originData = image.getReference();
+    for (int i = 0; i < width * height; ++i) {
         imgData[i * 4] = originData[i * 3];
         imgData[i * 4 + 1] = originData[i * 3 + 1];
         imgData[i * 4 + 2] = originData[i * 3 + 2];
@@ -345,32 +357,23 @@ Java_com_tc_tar_TARNativeInterface_nativeGetCurrentImage(JNIEnv* env, jobject th
     }
     lock.unlock();
 
-    jbyteArray byteArray = env->NewByteArray(imgSize);
-    env->SetByteArrayRegion(byteArray, 0, imgSize, (jbyte*)imgData);
-    
-    delete imgData;
-    return byteArray;
-
 #if 0
     TimestampedMat* image = gImageSource->getBuffer()->first();
     gImageSource->getBuffer()->popFront();
-    int width = gImageSource->width();
-    int height = gImageSource->height();
-    int imgSize = width * height * 4;
-    unsigned char* imgData = new unsigned char[imgSize];
     for (int i = 0; i < width * height; ++i) {
         imgData[i * 4] = image->data.data[i];
         imgData[i * 4 + 1] = image->data.data[i];
         imgData[i * 4 + 2] = image->data.data[i];
         imgData[i * 4 + 3] = (unsigned char)0xff;
     }
+    delete image;
+#endif
+
     jbyteArray byteArray = env->NewByteArray(imgSize);
     env->SetByteArrayRegion(byteArray, 0, imgSize, (jbyte*)imgData);
-
-    delete image;
+    
     delete imgData;
     return byteArray;
-#endif
 }
 
 }
