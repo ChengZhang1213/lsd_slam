@@ -4,7 +4,7 @@
 
 
 
-#define PLY_DIR "/sdcard/LSD/ply"
+#define PC_DIR "/sdcard/LSD/pc"
 #define DUMP_DIR "/sdcard/LSD/dump"
 using namespace lsd_slam;
 
@@ -100,38 +100,53 @@ float computeDist(float* a, float* b, int size) {
     return std::sqrt(dist);
 }
 
-void dumpCloudPoint(std::map<int, Keyframe*>& keyframes) {
-    std::string targetPathTmp = std::string(PLY_DIR) + "/pc_tmp.ply";
-    LOGD("Flushing Pointcloud to %s!\n", targetPathTmp.c_str());
-	std::ofstream f(targetPathTmp.c_str());
-	int numpts = 0;
-	for(std::map<int, Keyframe *>::iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
-	    if (i->second->initId >= cutFirstNKf) {
-	        numpts += i->second->flushPC(&f);
-	    }
+void dumpCloudPoint(std::map<int, Keyframe*>& keyframes, int format) {
+    if (format == 0) {
+        std::string targetPathTmp = std::string(PC_DIR) + "/pc_tmp.ply";
+        LOGD("Flushing Pointcloud to %s!\n", targetPathTmp.c_str());
+    	std::ofstream f(targetPathTmp.c_str());
+    	int numpts = 0;
+    	for(std::map<int, Keyframe *>::iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
+    	    if (i->second->initId >= cutFirstNKf) {
+    	        numpts += i->second->flushPC(&f, 0);
+    	    }
+    	}
+    	f.flush();
+    	f.close();
+
+        std::string targetPath = std::string(PC_DIR) + "/pc.ply";
+    	std::ofstream f2(targetPath.c_str());
+    	f2 << std::string("ply\n");
+    	f2 << std::string("format binary_little_endian 1.0\n");
+    	f2 << std::string("element vertex ") << numpts << std::string("\n");
+    	f2 << std::string("property float x\n");
+    	f2 << std::string("property float y\n");
+    	f2 << std::string("property float z\n");
+    	f2 << std::string("property float intensity\n");
+    	f2 << std::string("end_header\n");
+
+    	std::ifstream f3(targetPathTmp.c_str());
+    	while(!f3.eof()) f2.put(f3.get());
+
+    	f2.close();
+    	f3.close();
+
+    	system((std::string("rm ") + targetPathTmp).c_str());
+    	LOGD("Done Flushing Pointcloud with %d points!\n", numpts);
+	} else {
+	    std::string targetPath = std::string(PC_DIR) + "/pc.txt";
+        LOGD("Flushing Pointcloud to %s!\n", targetPath.c_str());
+    	std::ofstream f(targetPath.c_str());
+    	int numpts = 0;
+    	for(std::map<int, Keyframe *>::iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
+    	    if (i->second->initId >= cutFirstNKf) {
+    	        numpts += i->second->flushPC(&f, 1);
+    	    }
+    	}
+    	f.flush();
+    	f.close();
+    	LOGD("Done Flushing Pointcloud with %d points!\n", numpts);
 	}
-	f.flush();
-	f.close();
-
-    std::string targetPath = std::string(PLY_DIR) + "/pc.ply";
-	std::ofstream f2(targetPath.c_str());
-	f2 << std::string("ply\n");
-	f2 << std::string("format binary_little_endian 1.0\n");
-	f2 << std::string("element vertex ") << numpts << std::string("\n");
-	f2 << std::string("property float x\n");
-	f2 << std::string("property float y\n");
-	f2 << std::string("property float z\n");
-	f2 << std::string("property float intensity\n");
-	f2 << std::string("end_header\n");
-
-	std::ifstream f3(targetPathTmp.c_str());
-	while(!f3.eof()) f2.put(f3.get());
-
-	f2.close();
-	f3.close();
-
-	system((std::string("rm ") + targetPathTmp).c_str());
-	LOGD("Done Flushing Pointcloud with %d points!\n", numpts);
 }
 
 void dumpFile(unsigned char* data, int length) {

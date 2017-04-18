@@ -229,10 +229,10 @@ Java_com_tc_tar_TARNativeInterface_nativeGetAllKeyFrames(JNIEnv* env, jobject th
     std::list<jobject> objectList;
 
     boost::mutex::scoped_lock lock(keyframes.getMutex());
-#if 0
+#if 1
     static bool hasDumped = false;
-    if (keyframes.getReference().size() > 20 && !hasDumped) {
-        dumpCloudPoint(keyframes.getReference());
+    if (keyframes.getReference().size() > 10 && !hasDumped) {
+        dumpCloudPoint(keyframes.getReference(), 1);
         hasDumped = true;
     }
 #endif    

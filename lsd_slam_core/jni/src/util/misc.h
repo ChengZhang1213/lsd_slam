@@ -17,7 +17,7 @@ std::string &trim(std::string &s);
 int getdir (std::string dir, std::vector<std::string> &files);
 int getFile (std::string source, std::vector<std::string> &files);
 float computeDist(float* a, float* b, int size);
-void dumpCloudPoint(std::map<int, Keyframe*>& keyframes);
+void dumpCloudPoint(std::map<int, Keyframe*>& keyframes, int format);
 void dumpFile(unsigned char* data, int length);
 
 
