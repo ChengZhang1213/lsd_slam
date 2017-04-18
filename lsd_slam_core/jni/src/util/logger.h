@@ -4,6 +4,7 @@
 #include <android/log.h>
 #include "sophus/sim3.hpp"
 #include <GLES2/gl2.h>
+#include <jni.h>
 
 
 #define STRINGIFY(x) #x
@@ -43,5 +44,6 @@ void printTrans(const Sophus::Sim3f::Transformation& trans);
 void printMatrix4f(const Sophus::Matrix4f& m);
 void printMatrix4x4(GLfloat* m);
 void dumpCurrentMatrix();
+void printObjectClassName(JNIEnv* env, jobject obj);
 
 #endif

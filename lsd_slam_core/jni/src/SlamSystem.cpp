@@ -165,7 +165,7 @@ SlamSystem::~SlamSystem()
 	FrameMemory::getInstance().releaseBuffes();
 
 
-	Util::closeAllWindows();
+//	Util::closeAllWindows();
 }
 
 void SlamSystem::setVisualization(Output3DWrapper* outputWrapper)

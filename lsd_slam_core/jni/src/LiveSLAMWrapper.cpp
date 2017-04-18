@@ -182,7 +182,7 @@ void LiveSLAMWrapper::resetAll()
 	imageSeqNumber = 0;
 	isInitialized = false;
 
-	Util::closeAllWindows();
+//	Util::closeAllWindows();
 
 }
 

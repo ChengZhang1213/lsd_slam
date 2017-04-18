@@ -25,3 +25,16 @@ void dumpCurrentMatrix() {
     glGetFloatv (GL_MODELVIEW_MATRIX, matrix);
     printMatrix4x4(matrix);
 }
+
+void printObjectClassName(JNIEnv* env, jobject obj) {
+    jclass cls = env->GetObjectClass(obj);
+    jmethodID getClassMid = env->GetMethodID(cls, "getClass", "()Ljava/lang/Class;");
+    jobject clsObj = env->CallObjectMethod(obj, getClassMid);
+    
+    cls = env->GetObjectClass(clsObj);
+    jmethodID getNameMid = env->GetMethodID(cls, "getName", "()Ljava/lang/String;");
+    jstring strObj = (jstring)env->CallObjectMethod(clsObj, getNameMid);
+    const char* str = env->GetStringUTFChars(strObj, NULL);
+    LOGD("\nCalling class is: %s\n", str);
+    env->ReleaseStringUTFChars(strObj, str);
+}

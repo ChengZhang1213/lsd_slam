@@ -134,9 +134,9 @@ void dumpCloudPoint(std::map<int, Keyframe*>& keyframes) {
 	LOGD("Done Flushing Pointcloud with %d points!\n", numpts);
 }
 
-void dumpImage(unsigned char* data, int length) {
-    std::string targetPath = std::string(DUMP_DIR) + "aaa.img";
-    LOGD("dumpImage to %s!\n", targetPath.c_str());
+void dumpFile(unsigned char* data, int length) {
+    std::string targetPath = std::string(DUMP_DIR) + "/aaa.dump";
+    LOGD("dumpFile to %s!\n", targetPath.c_str());
 
     std::ofstream f(targetPath.c_str());
     for (int i=0; i<length; ++i) {
@@ -145,6 +145,6 @@ void dumpImage(unsigned char* data, int length) {
     f.flush();
     f.close();
 
-    LOGD("Done dumpImage, size=%d!\n", length);
+    LOGD("Done dumpFile, size=%d!\n", length);
 }
 

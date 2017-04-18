@@ -19,14 +19,14 @@ FilesImageSource::FilesImageSource(const std::string& sourceDir)
     else {
         LOGD("could not load file list! wrong path / file?\n");
     }
-    imageBuffer = new NotifyBuffer<TimestampedMat*>(8);
+    imageBuffer_ = new NotifyBuffer<TimestampedMat*>(8);
 }
 
 FilesImageSource::~FilesImageSource()
 {
     loopDone_.assignValue(true);
-    delete imageBuffer;
-    imageBuffer = NULL;
+    delete imageBuffer_;
+    imageBuffer_ = NULL;
 }
 
 void FilesImageSource::run()
@@ -36,9 +36,9 @@ void FilesImageSource::run()
 
 void FilesImageSource::operator()()
 {
-    LOGD("thread start\n");
+    LOGD("FilesImageSource thread start\n");
     loop();
-    LOGD("thread exit.\n");
+    LOGD("FilesImageSource thread exit.\n");
 }
 
 void FilesImageSource::stop() {
@@ -67,7 +67,6 @@ void FilesImageSource::loop() {
                         files_[i].c_str(), width_, height_, imageDist.cols, imageDist.rows);
             continue;
         }
-
         assert(imageDist.type() == CV_8U);
         undistorter_->undistort(imageDist, image);
         assert(image.type() == CV_8U);
@@ -75,8 +74,8 @@ void FilesImageSource::loop() {
         TimestampedMat* bufferItem = new TimestampedMat();
         bufferItem->timestamp = Timestamp(Timestamp::now().toSec() + fakeTimeStamp);
         bufferItem->data = image;
-        if (imageBuffer != NULL) {
-            while(!imageBuffer->pushBack(bufferItem)) continue;     // TODO: use better way
+        if (imageBuffer_ != NULL) {
+            while(!imageBuffer_->pushBack(bufferItem)) continue;     // TODO: use better way
         }
 
         fakeTimeStamp += 0.03;

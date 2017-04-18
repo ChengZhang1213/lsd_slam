@@ -588,7 +588,7 @@ void Sim3Tracker::calcSim3Buffers(
 	affineEstimation_b_lastIt = (sy - affineEstimation_a_lastIt*sx)/sw;
 
 
-
+#if 0
 	if(plotSim3TrackingIterationInfo)
 	{
 		Util::displayImage( "P Residuals", debugImageResiduals );
@@ -603,7 +603,7 @@ void Sim3Tracker::calcSim3Buffers(
 			Util::displayImage( "WD Res", debugImageWeightedResD );
 		}
 	}
-
+#endif
 }
 
 
@@ -1063,6 +1063,7 @@ void Sim3Tracker::calcResidualAndBuffers_debugStart()
 
 void Sim3Tracker::calcResidualAndBuffers_debugFinish(int w)
 {
+#if 0
 	if(plotTrackingIterationInfo)
 	{
 		Util::displayImage( "Weights", debugImageWeights );
@@ -1093,6 +1094,7 @@ void Sim3Tracker::calcResidualAndBuffers_debugFinish(int w)
 				handleKey(k);
 		}
 	}
+#endif
 
 	if(saveAllTrackingStagesInternal)
 	{

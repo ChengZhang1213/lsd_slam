@@ -26,7 +26,7 @@ public:
 	/**
 	 * Gets the NotifyBuffer to which incoming images are stored.
 	 */
-	inline NotifyBuffer<TimestampedMat*>* getBuffer() {return imageBuffer;};
+	inline NotifyBuffer<TimestampedMat*>* getBuffer() {return imageBuffer_;};
 
 
 	/**
@@ -41,7 +41,7 @@ public:
 	inline Sophus::Matrix3f K() {return K_;}
 
 protected:
-	NotifyBuffer<TimestampedMat*>* imageBuffer;
+	NotifyBuffer<TimestampedMat*>* imageBuffer_;
 	Undistorter* undistorter_;
 	float fx_, fy_, cx_, cy_;
 	int width_, height_;

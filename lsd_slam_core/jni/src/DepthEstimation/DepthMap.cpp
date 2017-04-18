@@ -1165,13 +1165,13 @@ void DepthMap::updateKeyframe(std::deque< std::shared_ptr<Frame> > referenceFram
 	activeKeyFrame->numMappedOnThis++;
 	activeKeyFrame->numMappedOnThisTotal++;
 
-
+#if 0
 	if(plotStereoImages)
 	{
 		Util::displayImage( "Stereo Key Frame", debugImageHypothesisHandling, false );
 		Util::displayImage( "Stereo Reference Frame", debugImageStereoLines, false );
 	}
-
+#endif
 
 
 	if(enablePrintDebugInfo && printLineStereoStatistics)

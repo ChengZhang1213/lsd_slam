@@ -13,10 +13,12 @@
 #include "misc.h"
 #include "ImageSource.h"
 #include "Android/FilesImageSource.h"
+#include "Android/VideoImageSource.h"
 
 
 // FIXME: remove hard code
 #define IMAGE_DIR "/sdcard/LSD/images"
+
 
 using namespace lsd_slam;
 Output3DWrapper* gOutputWrapper = NULL;
@@ -54,7 +56,6 @@ public:
     		    notifyCondition.wait(waitLock);
     		}
     		waitLock.unlock();
-
             TimestampedMat* image = imageSource_->getBuffer()->first();
 		    imageSource_->getBuffer()->popFront();
             if(runningIDX == 0){
@@ -63,6 +64,9 @@ public:
                 slamSystem_->trackFrame(image->data.data, runningIDX, false, image->timestamp.toSec());
             }
             runningIDX++;
+
+            LOGD("runningIDX=%d\n", runningIDX);
+            //printTrans(slamSystem_->getCurrentPoseEstimateScale().matrix());
 
             delete image;
         }
@@ -77,18 +81,56 @@ LsdSlamWrapper* gLsdSlam = NULL;
 
 
 extern "C"{
-JavaVM* jvm = NULL;
+JavaVM* gJvm = NULL;
+static jobject gClassLoader;
+static jmethodID gFindClassMethod;
+
+JNIEnv* getEnv() {
+    JNIEnv *env;
+    int status = gJvm->GetEnv((void**)&env, JNI_VERSION_1_6);
+    if(status < 0) {    
+        status = gJvm->AttachCurrentThread(&env, NULL);
+        if(status < 0) {        
+            return NULL;
+        }
+    }
+    return env;
+}
+
+jclass findClass(const char* name) {
+    return static_cast<jclass>(getEnv()->CallObjectMethod(gClassLoader, gFindClassMethod, getEnv()->NewStringUTF(name)));
+}
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *pjvm, void *reserved) {
+    gJvm = pjvm;  // cache the JavaVM pointer
+    auto env = getEnv();
+    //replace with one of your classes in the line below
+    auto randomClass = env->FindClass("com/tc/tar/MainActivity");
+    jclass classClass = env->GetObjectClass(randomClass);
+    auto classLoaderClass = env->FindClass("java/lang/ClassLoader");
+    auto getClassLoaderMethod = env->GetMethodID(classClass, "getClassLoader",
+                                             "()Ljava/lang/ClassLoader;");
+    gClassLoader = env->NewGlobalRef(env->CallObjectMethod(randomClass, getClassLoaderMethod));
+    gFindClassMethod = env->GetMethodID(classLoaderClass, "findClass",
+                                    "(Ljava/lang/String;)Ljava/lang/Class;");
+
+    return JNI_VERSION_1_6;
+}
 
 //init LSD
 JNIEXPORT void JNICALL
 Java_com_tc_tar_TARNativeInterface_nativeInit(JNIEnv* env, jobject thiz, jstring calibPath) {
 	LOGD("nativeInit");
     //init jni
-	env->GetJavaVM(&jvm);
+	env->GetJavaVM(&gJvm);
 
 	const char *calibFile = env->GetStringUTFChars(calibPath, 0);
 	LOGD("calibFile: %s\n", calibFile);
+#if 0
 	gImageSource = new FilesImageSource(IMAGE_DIR);
+#else
+	gImageSource = new VideoImageSource(gJvm);
+#endif
 	gImageSource->setCalibration(calibFile);
 	env->ReleaseStringUTFChars(calibPath, calibFile);  // release resources
 
@@ -304,10 +346,31 @@ Java_com_tc_tar_TARNativeInterface_nativeGetCurrentImage(JNIEnv* env, jobject th
     lock.unlock();
 
     jbyteArray byteArray = env->NewByteArray(imgSize);
-    env->SetByteArrayRegion(byteArray, 0, originSize, (jbyte*)imgData);
+    env->SetByteArrayRegion(byteArray, 0, imgSize, (jbyte*)imgData);
     
     delete imgData;
     return byteArray;
+
+#if 0
+    TimestampedMat* image = gImageSource->getBuffer()->first();
+    gImageSource->getBuffer()->popFront();
+    int width = gImageSource->width();
+    int height = gImageSource->height();
+    int imgSize = width * height * 4;
+    unsigned char* imgData = new unsigned char[imgSize];
+    for (int i = 0; i < width * height; ++i) {
+        imgData[i * 4] = image->data.data[i];
+        imgData[i * 4 + 1] = image->data.data[i];
+        imgData[i * 4 + 2] = image->data.data[i];
+        imgData[i * 4 + 3] = (unsigned char)0xff;
+    }
+    jbyteArray byteArray = env->NewByteArray(imgSize);
+    env->SetByteArrayRegion(byteArray, 0, imgSize, (jbyte*)imgData);
+
+    delete image;
+    delete imgData;
+    return byteArray;
+#endif
 }
 
 }

@@ -40,9 +40,9 @@ LOCAL_SRC_FILES += \
     $(LSD_PATH)/lsd_jni.cpp 
 
 LOCAL_SRC_FILES += \
-    $(LSD_PATH)/IOWrapper/OpenCV/ImageDisplay_OpenCV.cpp \
     $(LSD_PATH)/IOWrapper/Android/AndroidOutput3DWrapper.cpp \
-    $(LSD_PATH)/IOWrapper/Android/FilesImageSource.cpp
+    $(LSD_PATH)/IOWrapper/Android/FilesImageSource.cpp \
+    $(LSD_PATH)/IOWrapper/Android/VideoImageSource.cpp
 
 LOCAL_C_INCLUDES += \
     $(LSD_PATH) \

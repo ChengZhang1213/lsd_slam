@@ -449,10 +449,10 @@ SE3 SE3Tracker::trackFrame(
 		}
 	}
 
-
+#if 0
 	if(plotTracking)
 		Util::displayImage("TrackingResidual", debugImageResiduals, false);
-
+#endif
 
 	if(enablePrintDebugInfo && printTrackingIterationInfo)
 	{
@@ -804,6 +804,7 @@ void SE3Tracker::calcResidualAndBuffers_debugStart()
 
 void SE3Tracker::calcResidualAndBuffers_debugFinish(int w)
 {
+#if 0
 	if(plotTrackingIterationInfo)
 	{
 		Util::displayImage( "Weights", debugImageWeights );
@@ -833,6 +834,7 @@ void SE3Tracker::calcResidualAndBuffers_debugFinish(int w)
 				handleKey(k);
 		}
 	}
+#endif
 
 	if(saveAllTrackingStagesInternal)
 	{
